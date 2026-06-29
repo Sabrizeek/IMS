@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+/* ── Design tokens (pulled from the Figma palette) ───────────────── */
+:root {
+  --background: #ffffff;
+  --foreground: #14223a;
+
+  /* Brand blues */
+  --navy: #1e4976;        /* hero / primary buttons */
+  --navy-700: #1d3f63;
+  --navy-deep: #16243a;   /* footer / dark buttons */
+  --navy-deep-700: #1f3350;
+
+  /* Surfaces */
+  --sky: #b9d6ea;         /* student auth page background */
+  --sky-soft: #d7ecf7;    /* department auth page background */
+  --panel: #cdd9e3;       /* light card body */
+  --feature-bg: #b9cfe3;  /* features section background */
+
+  --accent: #2563eb;      /* icon blue */
+  --muted: #5b6a7a;
+
+  /* Auth flow surfaces */
+  --teal: #1c5b6b;        /* login panel / set-password card */
+  --periwinkle: #8fb4df;  /* light login / activate buttons */
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+
+  --color-navy: var(--navy);
+  --color-navy-700: var(--navy-700);
+  --color-navy-deep: var(--navy-deep);
+  --color-navy-deep-700: var(--navy-deep-700);
+  --color-sky: var(--sky);
+  --color-sky-soft: var(--sky-soft);
+  --color-panel: var(--panel);
+  --color-feature-bg: var(--feature-bg);
+  --color-accent: var(--accent);
+  --color-muted: var(--muted);
+  --color-teal: var(--teal);
+  --color-periwinkle: var(--periwinkle);
+
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans), system-ui, Arial, sans-serif;
+}
