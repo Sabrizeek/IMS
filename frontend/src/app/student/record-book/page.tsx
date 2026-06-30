@@ -123,8 +123,8 @@ export default function RecordBookSummaryPage() {
         _id: match?._id,
       });
     }
-    // "Only display weeks that are currently available or already submitted. Hide locked/future weeks."
-    const filtered = list.filter(w => w.status === "Submitted" || w.canEdit || w.status === "Draft" || w.status === "Edited");
+    // "Only display weeks that are currently available, already submitted, or have a saved draft. Hide untouched locked/future weeks."
+    const filtered = list.filter(w => w.canEdit || w.status === "Submitted" || w.hasEntry);
     // "Display entries in chronological order." -> Ascending order!
     return filtered.sort((a, b) => a.weekNumber - b.weekNumber);
   }, [internshipStartDate, records]);

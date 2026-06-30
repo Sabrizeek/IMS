@@ -375,9 +375,9 @@ export default function DepartmentApprovalsPage() {
                           <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[10px] font-bold ${
                             row.status === "Approved"
                               ? "bg-emerald-100 text-emerald-800"
-                              : row.status === "Rejected"
-                              ? "bg-rose-100 text-rose-800"
-                              : "bg-amber-100 text-amber-800"
+                              : row.status === "Pending Review"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-rose-100 text-rose-800"
                           }`}>
                             {row.status}
                           </span>
@@ -662,7 +662,7 @@ export default function DepartmentApprovalsPage() {
                 <div className="rounded-2xl bg-white p-5 border border-white shadow-sm relative flex flex-col justify-between min-h-[360px] w-full">
                   <div className="space-y-4">
                     <div className="absolute top-4 right-4">
-                      <span className="inline-block border border-blue-400 text-[8px] font-bold tracking-tight text-blue-600 bg-blue-50/60 rounded px-1.5 py-0.5 uppercase">SELECTED</span>
+                      <span className="inline-block border border-blue-400 text-[8px] font-bold tracking-tight text-blue-600 bg-blue-50/60 rounded px-1.5 py-0.5 uppercase">APPROVED</span>
                     </div>
                     <div className="flex flex-col items-center text-center mt-4">
                       <div className="relative h-20 w-20 bg-white border border-slate-200 p-0.5 rounded-full overflow-hidden flex items-center justify-center text-3xl">

@@ -47,10 +47,22 @@ export default function ProfileEditPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!form.photo) {
+      setError("Please upload a profile photo to continue.");
+      return;
+    }
+
+    if (!form.specialization) {
+      setError("Please select a specialization to continue.");
+      return;
+    }
+
     if (!locked && !confirm) {
       setError("Please confirm your specialization to continue.");
       return;
     }
+
     setError(null);
     setProfile({
       ...form,

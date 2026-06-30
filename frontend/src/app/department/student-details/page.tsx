@@ -448,36 +448,11 @@ export default function DepartmentStudentDetailsPage() {
 
               {/* Internal CV Sheet */}
               {activeStudent.cvDataUrl ? (
-                <div className="p-12 max-w-3xl mx-auto bg-white text-slate-800 space-y-6">
-                  <div className="text-center space-y-1.5">
-                    <h1 className="text-3xl font-serif text-slate-900 tracking-wide">{activeStudent.name}</h1>
-                    <p className="text-xs text-slate-500 font-mono">{activeStudent.email} • Ruhuna, SL</p>
-                  </div>
-
-                  <div className="border-t border-slate-300 pt-4">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Education</h3>
-                    <div className="mt-2 flex justify-between text-xs font-semibold">
-                      <p className="text-slate-800">University of Ruhuna</p>
-                      <p className="text-slate-500 font-normal">2023 - Present</p>
-                    </div>
-                    <p className="text-xs text-slate-600 italic mt-0.5">B.Sc. Undergraduate in {activeStudent.specialization || "Computer Science"}</p>
-                  </div>
-
-                  <div className="border-t border-slate-300 pt-4">
-                    <h3 className="text-sm font-bold uppercase tracking-wider text-slate-900">Projects Portfolio</h3>
-                    {activeStudent.projects && activeStudent.projects.length > 0 ? (
-                      activeStudent.projects.map((proj, i) => (
-                        <div key={proj.id || i} className="mt-3 text-xs border-b border-slate-100 pb-2 last:border-0">
-                          <p className="font-bold text-slate-800">#{i + 1} {proj.projectTitle}</p>
-                          <p className="text-slate-600 mt-1 leading-relaxed">{proj.projectDescription}</p>
-                          <p className="text-[10px] text-sky-600 font-semibold mt-1">Tech Stack: {proj.technologies?.join(", ")}</p>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-xs text-slate-500 italic mt-2">No projects recorded in portfolio.</p>
-                    )}
-                  </div>
-                </div>
+                <iframe 
+                  src={activeStudent.cvDataUrl} 
+                  className="w-full h-full min-h-[650px] border-0" 
+                  title={`${activeStudent.name} CV`}
+                />
               ) : (
                 <div className="p-20 text-center text-slate-400 italic">
                   This student has not yet uploaded a CV resume file.

@@ -115,22 +115,24 @@ async function listAll(_req, res) {
 async function review(req, res) {
   try {
     const { approved, rejectionReason } = req.body;
-    const application = await InternshipApplication.findById(req.params.id).populate("user");
-    if (!application) return res.status(404).json({ message: "Application not found" });
 
     if (req.user.role !== "department" && req.user.role !== "admin") {
       return res.status(403).json({ message: "Forbidden: Only Department can approve placements" });
     }
 
-    application.approved = approved;
-    application.reviewedAt = new Date();
-    if (approved) {
-      application.rejectionReason = "";
-    } else {
-      application.rejectionReason = rejectionReason || "Rejected by department.";
-    }
+    const application = await InternshipApplication.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: {
+          approved,
+          reviewedAt: new Date(),
+          rejectionReason: approved ? "" : (rejectionReason || "Rejected by department.")
+        }
+      },
+      { new: true }
+    ).populate("user");
 
-    await application.save();
+    if (!application) return res.status(404).json({ message: "Application not found" });
 
     // Log the audit actions
     const studentId = application.user?.studentId || "";
@@ -142,6 +144,7 @@ async function review(req, res) {
 
     res.json({ application });
   } catch (error) {
+    console.error("Review Error:", error);
     res.status(500).json({ message: error.message });
   }
 }

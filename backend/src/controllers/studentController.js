@@ -39,6 +39,15 @@ async function listStudents(_req, res) {
           github: profile?.github || "",
           projects: profile?.projects || [],
           photo: profile?.photo || "",
+          cvFileName: profile?.cvFileName || "",
+          cvMimeType: profile?.cvMimeType || "",
+          cvDataUrl: profile?.cvDataUrl || "",
+          certificationsFileName: profile?.certificationsFileName || "",
+          certificationsMimeType: profile?.certificationsMimeType || "",
+          certificationsDataUrl: profile?.certificationsDataUrl || "",
+          additionalItemsFileName: profile?.additionalItemsFileName || "",
+          additionalItemsMimeType: profile?.additionalItemsMimeType || "",
+          additionalItemsDataUrl: profile?.additionalItemsDataUrl || "",
         };
       })
     );
