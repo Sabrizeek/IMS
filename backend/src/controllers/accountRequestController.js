@@ -64,7 +64,24 @@ async function listRequests(req, res) {
     const { status } = req.query;
     const filter = status ? { status } : {};
     const requests = await AccountRequest.find(filter).sort({ createdAt: -1 });
-    res.json({ requests });
+
+    // Try to fetch profile photos for users who have already set up their profile
+    const emails = requests.map(r => r.email.toLowerCase().trim());
+    const profiles = await StudentProfile.find({ email: { $in: emails } }).select("email photo");
+    const photoMap = {};
+    profiles.forEach(p => {
+      if (p.email) photoMap[p.email.toLowerCase().trim()] = p.photo;
+    });
+
+    const requestsWithPhotos = requests.map(r => {
+      const emailLower = r.email.toLowerCase().trim();
+      return {
+        ...r.toObject(),
+        photo: photoMap[emailLower] || ""
+      };
+    });
+
+    res.json({ requests: requestsWithPhotos });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

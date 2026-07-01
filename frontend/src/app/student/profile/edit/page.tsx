@@ -53,6 +53,21 @@ export default function ProfileEditPage() {
       return;
     }
 
+    if (!form.name.trim()) {
+      setError("Please enter your name to continue.");
+      return;
+    }
+
+    if (!form.studentId.trim()) {
+      setError("Please enter your Student ID to continue.");
+      return;
+    }
+
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setError("Please enter a valid university email address to continue.");
+      return;
+    }
+
     if (!form.specialization) {
       setError("Please select a specialization to continue.");
       return;
@@ -79,6 +94,12 @@ export default function ProfileEditPage() {
     <div className="flex flex-col min-h-screen">
       <main className="flex-1 bg-sky p-6">
         <div className="mx-auto max-w-3xl py-10">
+          <button
+            onClick={() => router.push("/student/dashboard")}
+            className="mb-6 flex items-center gap-2 text-sm font-bold text-navy hover:text-navy-deep transition-colors cursor-pointer bg-white/70 px-4 py-2 rounded-xl shadow-sm w-fit"
+          >
+            ← Back to Dashboard
+          </button>
           <form onSubmit={handleSubmit} className="rounded-3xl bg-white/70 p-8 sm:p-12 shadow-sm">
             <h1 className="text-xl font-bold text-navy-deep">Academic Identity</h1>
             <p className="mt-1 text-sm text-navy-deep/70">Please provide your details as they appear on your official enrollment documents</p>
@@ -115,11 +136,11 @@ export default function ProfileEditPage() {
               </Field>
 
               <Field label="Student ID" htmlFor="studentId">
-                <Input id="studentId" value={form.studentId} onChange={(e) => setForm({ ...form, studentId: e.target.value })} required />
+                <Input id="studentId" value={form.studentId} disabled className="opacity-60 cursor-not-allowed bg-slate-50" />
               </Field>
 
               <Field label="University Email" htmlFor="email">
-                <Input id="email" type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required />
+                <Input id="email" type="email" value={form.email} disabled className="opacity-60 cursor-not-allowed bg-slate-50" />
               </Field>
 
               <div>
@@ -131,8 +152,8 @@ export default function ProfileEditPage() {
               </div>
 
               {/* Confirm Checkbox */}
-              <label className="flex gap-3 rounded-lg bg-sky/60 p-4 cursor-pointer">
-                <input type="checkbox" checked={confirm} onChange={(e) => setConfirm(e.target.checked)} className="mt-0.5 h-5 w-5 accent-navy-deep" />
+              <label className={`flex gap-3 rounded-lg bg-sky/60 p-4 ${locked ? "opacity-60 cursor-not-allowed" : "cursor-pointer"}`}>
+                <input type="checkbox" checked={locked || confirm} disabled={locked} onChange={(e) => setConfirm(e.target.checked)} className="mt-0.5 h-5 w-5 accent-navy-deep" />
                 <span className="text-sm text-navy-deep">
                   <span className="font-semibold">I confirm that this is my correct specialization</span>
                   <span className="mt-1 block text-navy-deep/70">By checking this box, you acknowledge that your specialization cannot be modified after clicking Save & Continue</span>

@@ -40,8 +40,27 @@ export default function DepartmentProfileEditPage() {
     reader.readAsDataURL(file);
   };
 
+  const [error, setError] = useState<string | null>(null);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!form.fullName.trim()) {
+      setError("Please enter your full name.");
+      return;
+    }
+
+    if (!form.universityId.trim()) {
+      setError("Please enter your University ID.");
+      return;
+    }
+
+    if (!form.email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
+      setError("Please enter a valid university email address.");
+      return;
+    }
+
+    setError(null);
     setDeptProfile(form);
     router.push("/department/dashboard");
   };
@@ -94,6 +113,8 @@ export default function DepartmentProfileEditPage() {
               </div>
 
               <hr className="my-8 border-navy-deep/15" />
+
+              {error && <p className="mb-4 text-sm text-red-600 font-medium">{error}</p>}
 
               <Button type="submit" variant="dark" className="px-10 py-3.5">
                 SAVE &amp; CONTINUE

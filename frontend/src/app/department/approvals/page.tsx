@@ -13,6 +13,7 @@ interface PlacementRequest {
   id: string; // studentId
   email: string;
   studentUserId: string;
+  photo?: string;
   company: string;
   role: string;
   date: string;
@@ -41,18 +42,16 @@ interface WeeklyRecordData {
 export default function DepartmentApprovalsPage() {
   const { user, ready } = useAuth();
   useAuthGuard("department", "/department/auth");
+  const router = useRouter();
 
   const [placements, setPlacements] = useState<PlacementRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeRequest, setActiveRequest] = useState<PlacementRequest | null>(null);
-  const [isReviewOpen, setIsReviewOpen] = useState(false);
-  const [isRejectOpen, setIsRejectOpen] = useState(false);
   const [isRecordBookOpen, setIsRecordBookOpen] = useState(false);
   const [studentWeeks, setStudentWeeks] = useState<WeeklyRecordData[]>([]);
   const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
-  const [rejectionReason, setRejectionReason] = useState("");
   const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<"pending" | "approved" | "rejected">("pending");
+  const [activeTab, setActiveTab] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const [error, setError] = useState<string | null>(null);
 
 
@@ -82,6 +81,7 @@ export default function DepartmentApprovalsPage() {
 
   const filteredPlacements = useMemo(() => {
     return placements.filter((p) => {
+      if (activeTab === "all") return true;
       if (activeTab === "pending") return p.status === "Pending Review";
       if (activeTab === "approved") return p.status === "Approved";
       if (activeTab === "rejected") return p.status === "Rejected";
@@ -90,17 +90,11 @@ export default function DepartmentApprovalsPage() {
   }, [placements, activeTab]);
 
   const openReview = (request: PlacementRequest) => {
-    setActiveRequest(request);
-    setIsRejectOpen(false);
-    setIsRecordBookOpen(false);
-    setIsReviewOpen(true);
-    setActionMessage(null);
+    router.push(`/department/approvals/${request._id}`);
   };
 
   const openRecordBook = async (request: PlacementRequest) => {
     setActiveRequest(request);
-    setIsReviewOpen(false);
-    setIsRejectOpen(false);
     setActionMessage(null);
 
     // Fetch real weekly records of the student
@@ -122,64 +116,9 @@ export default function DepartmentApprovalsPage() {
   };
 
   const closeOverlay = () => {
-    setIsReviewOpen(false);
-    setIsRejectOpen(false);
     setIsRecordBookOpen(false);
     setActiveRequest(null);
-    setRejectionReason("");
     setExpandedWeek(null);
-  };
-
-  const handleApprove = async () => {
-    if (!activeRequest) return;
-    try {
-      const token = sessionStorage.getItem("ims.department.token");
-      const res = await fetch(`http://localhost:5000/api/internships/${activeRequest._id}/review`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ approved: true }),
-      });
-      if (res.ok) {
-        setActionMessage(`Placement approved for ${activeRequest.student}.`);
-        fetchPlacements();
-        closeOverlay();
-      } else {
-        alert("Failed to approve placement.");
-      }
-    } catch {
-      alert("Unable to process request.");
-    }
-  };
-
-  const handleRejectConfirm = async () => {
-    if (!activeRequest) return;
-    if (!rejectionReason.trim()) {
-      alert("Please provide a rejection reason or select a condition before submitting.");
-      return;
-    }
-    try {
-      const token = sessionStorage.getItem("ims.department.token");
-      const res = await fetch(`http://localhost:5000/api/internships/${activeRequest._id}/review`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ approved: false, rejectionReason }),
-      });
-      if (res.ok) {
-        setActionMessage(`Rejection sent to ${activeRequest.student}.`);
-        fetchPlacements();
-        closeOverlay();
-      } else {
-        alert("Failed to reject placement.");
-      }
-    } catch {
-      alert("Unable to process request.");
-    }
   };
 
   // Locked week Unlock & Approve by Department
@@ -297,33 +236,43 @@ export default function DepartmentApprovalsPage() {
                 Centralized management for student internship placements. Review pending records, verify company details, and track approval workflows.
               </p>
             </div>
-            <div className="flex flex-wrap gap-3">
+            <div className="inline-flex flex-nowrap items-center gap-1.5 rounded-[20px] bg-slate-100/80 p-1.5 border border-slate-200 shadow-inner overflow-x-auto">
+              <button
+                onClick={() => setActiveTab("all")}
+                className={`rounded-xl px-5 py-2.5 text-xs font-bold transition-all duration-200 ${
+                  activeTab === "all"
+                    ? "bg-[#1a446c] text-white shadow-md"
+                    : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900"
+                }`}
+              >
+                All ({placements.length})
+              </button>
               <button
                 onClick={() => setActiveTab("pending")}
-                className={`rounded-2xl border px-5 py-3 text-xs font-bold transition shadow-sm ${
+                className={`rounded-xl px-5 py-2.5 text-xs font-bold transition-all duration-200 ${
                   activeTab === "pending"
-                    ? "bg-[#1a446c] text-white border-[#1a446c]"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                    ? "bg-[#1a446c] text-white shadow-md"
+                    : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900"
                 }`}
               >
                 Pending Review ({placements.filter(p => p.status === "Pending Review").length})
               </button>
               <button
                 onClick={() => setActiveTab("approved")}
-                className={`rounded-2xl border px-5 py-3 text-xs font-bold transition shadow-sm ${
+                className={`rounded-xl px-5 py-2.5 text-xs font-bold transition-all duration-200 ${
                   activeTab === "approved"
-                    ? "bg-[#1a446c] text-white border-[#1a446c]"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                    ? "bg-[#1a446c] text-white shadow-md"
+                    : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900"
                 }`}
               >
                 Approved ({placements.filter(p => p.status === "Approved").length})
               </button>
               <button
                 onClick={() => setActiveTab("rejected")}
-                className={`rounded-2xl border px-5 py-3 text-xs font-bold transition shadow-sm ${
+                className={`rounded-xl px-5 py-2.5 text-xs font-bold transition-all duration-200 ${
                   activeTab === "rejected"
-                    ? "bg-[#1a446c] text-white border-[#1a446c]"
-                    : "bg-white text-slate-600 border-slate-200 hover:bg-slate-50"
+                    ? "bg-[#1a446c] text-white shadow-md"
+                    : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900"
                 }`}
               >
                 Rejected ({placements.filter(p => p.status === "Rejected").length})
@@ -365,8 +314,19 @@ export default function DepartmentApprovalsPage() {
                     filteredPlacements.map((row) => (
                       <tr key={row._id} className="hover:bg-slate-50/80 transition">
                         <td className="px-6 py-4">
-                          <p className="font-bold text-slate-900">{row.student}</p>
-                          <p className="text-[11px] font-medium text-slate-500 mt-0.5">{row.id}</p>
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 border border-slate-300">
+                              {row.photo ? (
+                                <img src={row.photo} alt={row.student} className="h-full w-full object-cover" />
+                              ) : (
+                                <span className="text-sm">👤</span>
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-bold text-slate-900">{row.student}</p>
+                              <p className="text-[11px] font-medium text-slate-500 mt-0.5">{row.id}</p>
+                            </div>
+                          </div>
                         </td>
                         <td className="px-6 py-4 font-medium text-slate-700">{row.company}</td>
                         <td className="px-6 py-4 font-medium text-slate-700">{row.role}</td>
@@ -415,7 +375,7 @@ export default function DepartmentApprovalsPage() {
       <Footer />
 
       {/* OVERLAY DYNAMIC MODAL LAYER */}
-      {(isReviewOpen || isRejectOpen || isRecordBookOpen) && activeRequest && (
+      {isRecordBookOpen && activeRequest && (
         <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6">
           <div className="w-full max-w-6xl rounded-[28px] bg-[#dceef7] p-6 shadow-2xl border border-white flex flex-col max-h-[90vh]">
             
@@ -423,7 +383,7 @@ export default function DepartmentApprovalsPage() {
               <div>
                 <p className="text-[10px] uppercase tracking-widest text-[#1a446c] font-black">IMS Portal</p>
                 <h2 className="text-xl font-black text-slate-900 mt-1">
-                  {isRecordBookOpen ? "Internship Weekly Record Book" : isRejectOpen ? "Reject / Request Changes" : "Review Internship Workspace"}
+                  Internship Weekly Record Book
                 </h2>
               </div>
               <button
@@ -436,13 +396,19 @@ export default function DepartmentApprovalsPage() {
             </div>
 
             {/* RECORD BOOK INTERFACE */}
-            {isRecordBookOpen ? (
+            {isRecordBookOpen && (
               <div className="flex-grow overflow-y-auto pr-1 space-y-6">
                 
                 {/* Student Profile Header Banner */}
                 <div className="rounded-2xl bg-[#1e3a5f] p-5 text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <span className="text-3xl">👤</span>
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 border-2 border-white/20">
+                      {activeRequest.photo ? (
+                        <img src={activeRequest.photo} alt={activeRequest.student} className="h-full w-full object-cover" />
+                      ) : (
+                        <span className="text-xl">👤</span>
+                      )}
+                    </div>
                     <div>
                       <h3 className="text-base font-bold">{activeRequest.student}</h3>
                       <p className="text-xs text-slate-300">Student ID: {activeRequest.id}</p>
@@ -634,112 +600,6 @@ export default function DepartmentApprovalsPage() {
                     </div>
                   </div>
 
-                </div>
-              </div>
-            ) : isRejectOpen ? (
-              <div className="rounded-2xl bg-white p-6 border border-slate-200/80 shadow-sm space-y-4">
-                <label htmlFor="modalRejectReason" className="block text-xs font-bold text-slate-500 uppercase tracking-wider">
-                  Specify Changes or Reason for Rejection
-                </label>
-                <textarea
-                  id="modalRejectReason"
-                  value={rejectionReason}
-                  onChange={(e) => setRejectionReason(e.target.value)}
-                  placeholder="Type missing conditions or reason for reject..."
-                  className="w-full min-h-[160px] rounded-xl border border-slate-200 p-4 text-xs text-slate-700 outline-none focus:ring-1 focus:ring-slate-400 font-sans"
-                />
-                <div className="flex justify-end gap-2">
-                  <button type="button" onClick={() => setIsRejectOpen(false)} className="rounded-lg bg-slate-100 hover:bg-slate-200 px-4 py-2 text-xs font-bold text-slate-700 transition cursor-pointer">
-                    Cancel
-                  </button>
-                  <button type="button" onClick={handleRejectConfirm} disabled={!rejectionReason.trim()} className="rounded-lg bg-rose-600 hover:bg-rose-700 px-4 py-2 text-xs font-bold text-white transition disabled:opacity-50 cursor-pointer">
-                    Confirm & Send Notification
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="grid gap-6 lg:grid-cols-[280px_1fr] items-start">
-                <div className="rounded-2xl bg-white p-5 border border-white shadow-sm relative flex flex-col justify-between min-h-[360px] w-full">
-                  <div className="space-y-4">
-                    <div className="absolute top-4 right-4">
-                      <span className="inline-block border border-blue-400 text-[8px] font-bold tracking-tight text-blue-600 bg-blue-50/60 rounded px-1.5 py-0.5 uppercase">APPROVED</span>
-                    </div>
-                    <div className="flex flex-col items-center text-center mt-4">
-                      <div className="relative h-20 w-20 bg-white border border-slate-200 p-0.5 rounded-full overflow-hidden flex items-center justify-center text-3xl">
-                        👤
-                      </div>
-                      <div className="mt-3 space-y-0.5">
-                        <h4 className="text-xs font-black text-slate-900 tracking-wide">{activeRequest.student}</h4>
-                        <p className="text-[10px] font-bold text-slate-500">ID: {activeRequest.id}</p>
-                        <p className="text-[10px] font-medium text-slate-400 break-all font-sans">{activeRequest.email}</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="border-t border-slate-100 pt-3 mt-4 flex items-center justify-between text-xs font-bold text-slate-500 font-sans">
-                    <span>Internship Start Date</span>
-                    <span className="text-slate-900 text-xs font-black">{activeRequest.internshipStartDate}</span>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <div className="rounded-xl bg-[#1e446c] p-3.5 text-white shadow-sm flex flex-col justify-between min-h-[75px]">
-                      <span className="text-[9px] font-bold tracking-wider uppercase text-slate-300">Company</span>
-                      <p className="text-xs font-bold tracking-wide text-white mt-1 truncate">{activeRequest.company}</p>
-                    </div>
-                    <div className="rounded-xl bg-[#1e446c] p-3.5 text-white shadow-sm flex flex-col justify-between min-h-[75px]">
-                      <span className="text-[9px] font-bold tracking-wider uppercase text-slate-300">Position</span>
-                      <p className="text-xs font-bold tracking-wide text-white mt-1 truncate">{activeRequest.role}</p>
-                    </div>
-                    <div className="rounded-xl bg-[#1e446c] p-3.5 text-white shadow-sm flex flex-col justify-between min-h-[75px]">
-                      <span className="text-[9px] font-bold tracking-wider uppercase text-slate-300">Submitted On</span>
-                      <p className="text-xs font-bold tracking-wide text-white mt-1 truncate">{activeRequest.date}</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-xl border border-slate-300 bg-[#cbdce5] overflow-hidden shadow-sm flex flex-col">
-                    <div className="px-4 py-2 bg-[#b9cbd6] flex items-center justify-between text-xs font-bold text-slate-700 border-b border-slate-300">
-                      <span className="text-[11px]">{activeRequest.offerFileName || "offer_letter.pdf"}</span>
-                      {activeRequest.offerDataUrl && (
-                        <button
-                          type="button"
-                          onClick={handleDownloadOfferLetter}
-                          className="bg-white px-3 py-1 rounded border border-slate-300 hover:bg-slate-100 text-slate-800 text-[10px] font-bold shadow-xs cursor-pointer"
-                        >
-                          Download file
-                        </button>
-                      )}
-                    </div>
-                    <div className="p-8 bg-[#cad7df] flex justify-center">
-                      {activeRequest.offerDataUrl ? (
-                        <div className="w-full max-w-xl bg-white rounded shadow p-6 min-h-[220px] flex flex-col items-center justify-center text-center">
-                          <p className="text-3xl">📄</p>
-                          <p className="text-xs text-slate-700 font-bold mt-3">Offer letter uploaded successfully.</p>
-                          <p className="text-[11px] text-slate-400 mt-1">Size: {activeRequest.offerMimeType || "Application/pdf"}</p>
-                          <button
-                            type="button"
-                            onClick={handleDownloadOfferLetter}
-                            className="mt-4 inline-flex items-center gap-1.5 rounded bg-[#1a446c] px-4 py-2 text-xs font-bold text-white shadow-sm hover:bg-[#133352]"
-                          >
-                            Download document to review
-                          </button>
-                        </div>
-                      ) : (
-                        <div className="w-full max-w-xl bg-white rounded shadow p-10 min-h-[220px] flex items-center justify-center text-center text-slate-400 italic text-xs">
-                          No offer letter document uploaded.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-2">
-                    <button type="button" onClick={() => setIsRejectOpen(true)} className="rounded-lg bg-rose-600 hover:bg-rose-700 px-4 py-2 text-xs font-bold text-white transition cursor-pointer">
-                      Reject Placement
-                    </button>
-                    <button type="button" onClick={handleApprove} className="rounded-lg bg-emerald-600 hover:bg-emerald-700 px-4 py-2 text-xs font-bold text-white transition cursor-pointer">
-                      Approve Placement
-                    </button>
-                  </div>
                 </div>
               </div>
             )}

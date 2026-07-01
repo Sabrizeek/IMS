@@ -17,7 +17,7 @@ const links = [
 export function StudentNav() {
   const pathname = usePathname();
   const router = useRouter();
-  const { user, ready, logout } = useAuth();
+  const { user, ready, logout, profile } = useAuth();
 
   const [hasRejection, setHasRejection] = useState(false);
 
@@ -88,9 +88,13 @@ export function StudentNav() {
           >
             Logout
           </button>
-          <span className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white/10 ring-2 ring-white/30">
-            <UserRound className="h-6 w-6 text-white/80" />
-          </span>
+          <Link href="/student/profile/edit" className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-white/10 ring-2 ring-white/30 transition hover:bg-white/20">
+            {profile?.photo ? (
+              <img src={profile.photo} alt="Profile" className="h-full w-full object-cover" />
+            ) : (
+              <UserRound className="h-6 w-6 text-white/80" />
+            )}
+          </Link>
         </div>
       </nav>
     </header>

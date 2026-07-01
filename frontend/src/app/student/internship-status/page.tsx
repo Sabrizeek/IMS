@@ -89,8 +89,7 @@ export default function InternshipStatusPage() {
   const statusIsRejected = state === "selected" && submitted && !approved && rejectionReason;
   const statusIsApproved = statusIsSubmitted && approved;
 
-  // Form එක lock වෙන්නේ "selected" නොවන ඕනෑම අවස්ථාවකයි
-  const isFormLocked = state !== "selected";
+  const isFormLocked = submitted && !statusIsRejected;
 
   const timeline = useMemo(
     () => [
@@ -185,38 +184,6 @@ export default function InternshipStatusPage() {
     }
   };
 
-  const markNotSelected = async () => {
-    try {
-      const token = sessionStorage.getItem("ims.student.token");
-      const res = await fetch("http://localhost:5000/api/internships", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          state: "notSelected",
-          companyName: "",
-          jobPosition: "",
-          internshipStartDate: "",
-          offerFileName: "",
-          offerMimeType: "",
-          offerDataUrl: "",
-        }),
-      });
-      if (res.ok) {
-        resetForm();
-        setState("notSelected");
-        setRejectionReason("");
-        setToastMessage("Status updated. Keep applying for new opportunities.");
-        window.setTimeout(() => setToastMessage(""), 3000);
-        fetchStatus();
-      }
-    } catch {
-      setValidationError("Unable to connect to backend server.");
-    }
-  };
-
   const approvePlacement = async () => {
     if (!applicationId) return;
     try {
@@ -282,8 +249,8 @@ export default function InternshipStatusPage() {
             <h1 className="text-xl font-bold text-[#0f2d59]">
               Internship Placement Tracking
             </h1>
-            <p className="mt-2 max-w-4xl text-sm text-[#0f2d59]/80 leading-relaxed">
-              Update your current placement status. If you have secured an internship, please provide the details for department verification.
+            <p className="mt-2 max-w-4xl text-sm text-[#0f2d59]/80 leading-relaxed font-semibold">
+              Only students who have been selected for an internship are eligible to complete and submit this form. If you have secured a placement, please provide the details below for department verification.
             </p>
           </div>
 
@@ -298,65 +265,6 @@ export default function InternshipStatusPage() {
             
             {/* Left Column: Cards & Form */}
             <div className="space-y-6">
-              
-              {/* Selection Cards */}
-              <div className="grid gap-4 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => setState("selected")}
-                  className={`relative rounded-xl border-2 p-5 text-left transition flex items-start gap-4 ${
-                    state === "selected"
-                      ? "border-[#0f2d59] bg-[#d6e9f5]"
-                      : "border-white bg-[#c5dfee] hover:bg-[#d6e9f5]"
-                  }`}
-                >
-                  <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 ${state === "selected" ? "bg-[#0f2d59] border-[#0f2d59] text-white" : "border-[#0f2d59]/40"}`}>
-                    {state === "selected" && <span className="text-xs">✓</span>}
-                  </div>
-                  <div>
-                    <p className="font-bold text-sm text-[#0f2d59]">I have been selected</p>
-                    <p className="mt-2 text-xs text-[#0f2d59]/80 leading-relaxed">
-                      I have received an offer from a company and am ready to formalize my internship placement for review.
-                    </p>
-                  </div>
-                  <div className="absolute top-5 right-5 h-4 w-4 rounded-full border border-[#0f2d59]/40 flex items-center justify-center">
-                    {state === "selected" && <div className="h-2 w-2 rounded-full bg-[#0f2d59]" />}
-                  </div>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={markNotSelected}
-                  className={`relative rounded-xl border-2 p-5 text-left transition flex items-start gap-4 ${
-                    state === "notSelected"
-                      ? "border-[#0f2d59] bg-[#d6e9f5]"
-                      : "border-white bg-[#c5dfee] hover:bg-[#d6e9f5]"
-                  }`}
-                >
-                  <div className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md border-2 ${state === "notSelected" ? "bg-[#0f2d59] border-[#0f2d59] text-white" : "border-[#0f2d59]/40"}`}>
-                    {state === "notSelected" && <span className="text-xs">✓</span>}
-                  </div>
-                  <div>
-                    <p className="font-bold text-sm text-[#0f2d59]">Not Selected Yet</p>
-                    <p className="mt-2 text-xs text-[#0f2d59]/80 leading-relaxed">
-                      I am currently applying to roles or awaiting responses from recruiters. No action needed yet.
-                    </p>
-                  </div>
-                  <div className="absolute top-5 right-5 h-4 w-4 rounded-full border border-[#0f2d59]/40 flex items-center justify-center">
-                    {state === "notSelected" && <div className="h-2 w-2 rounded-full bg-[#0f2d59]" />}
-                  </div>
-                </button>
-              </div>
-
-              {/* Status Message for Not Selected */}
-              {state === "notSelected" ? (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 p-5 text-rose-700">
-                  <div className="flex items-center gap-3">
-                    <XCircle className="h-5 w-5 shrink-0" />
-                    <p className="text-sm font-medium">Your status remains active in the pool. Keep applying!</p>
-                  </div>
-                </div>
-              ) : null}
 
               {/* Status Message for Rejection */}
               {statusIsRejected ? (
@@ -381,18 +289,13 @@ export default function InternshipStatusPage() {
                     <FileText className="h-5 w-5" />
                     <span className="text-sm font-semibold tracking-wide">Formalize Your Offer</span>
                   </div>
-                  <div className="rounded bg-white/20 p-1 flex items-center gap-1.5 px-2">
+                  <div className="flex items-center gap-1.5 px-2">
                     {isFormLocked ? (
-                      <>
+                      <div className="rounded bg-white/20 p-1 flex items-center gap-1.5 px-2">
                         <span className="text-[10px] uppercase font-bold tracking-wider">Locked</span>
                         <Lock className="h-4 w-4 text-white" />
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-[10px] uppercase font-bold tracking-wider">Unlocked</span>
-                        <Unlock className="h-4 w-4 text-white" />
-                      </>
-                    )}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
@@ -408,7 +311,7 @@ export default function InternshipStatusPage() {
                             value={companyName}
                             onChange={(event) => setCompanyName(event.target.value)}
                             className="mt-2 w-full rounded border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
-                            placeholder={isFormLocked ? "Select 'I have been selected' to unlock" : "e.g., TechCorp Solutions"}
+                            placeholder="e.g., TechCorp Solutions"
                           />
                         </label>
                         <label className="block">
@@ -418,7 +321,7 @@ export default function InternshipStatusPage() {
                             value={jobPosition}
                             onChange={(event) => setJobPosition(event.target.value)}
                             className="mt-2 w-full rounded border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
-                            placeholder={isFormLocked ? "Select 'I have been selected' to unlock" : "e.g., Software Engineering Intern"}
+                            placeholder="e.g., Software Engineering Intern"
                           />
                         </label>
                       </div>

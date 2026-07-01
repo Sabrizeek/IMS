@@ -16,7 +16,7 @@ const specializations = [
   "Computer Engineering",
 ];
 
-const internshipStatusOptions = ["Approved", "Pending Approval", "Not Selected"];
+const internshipStatusOptions = ["Selected", "Pending", "Not Selected"];
 const gpaOptions = ["Higher to Lower", "Lower to Higher"];
 
 interface StudentData {
@@ -59,7 +59,7 @@ export default function DepartmentStudentDetailsPage() {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedGpaOrder, setSelectedGpaOrder] = useState("");
   const [activeStudent, setActiveStudent] = useState<StudentData | null>(null);
-  const [detailMode, setDetailMode] = useState<"cv" | "profile" | null>(null);
+  const [detailMode, setDetailMode] = useState<"cv" | "certifications" | "additional" | "profile" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const fetchStudents = async () => {
@@ -106,7 +106,7 @@ export default function DepartmentStudentDetailsPage() {
     return list;
   }, [students, selectedSpecialization, selectedStatus, selectedGpaOrder]);
 
-  const openDetail = async (student: StudentData, mode: "cv" | "profile") => {
+  const openDetail = async (student: StudentData, mode: "cv" | "certifications" | "additional" | "profile") => {
     try {
       const token = sessionStorage.getItem("ims.department.token");
       // Fetch full details of student (including CV, projects, etc.)
@@ -302,8 +302,19 @@ export default function DepartmentStudentDetailsPage() {
                       <tr key={student.id} className="hover:bg-slate-50/60 transition">
                         <td className="px-6 py-5 font-bold text-[#0f2a4a]">{(index + 1).toString().padStart(2, "0")}</td>
                         <td className="px-6 py-5">
-                          <p className="font-bold text-[#0f2a4a] text-sm">{student.name}</p>
-                          <p className="text-slate-400 mt-0.5">ID: {student.studentId}</p>
+                          <div className="flex items-center gap-3">
+                            <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-slate-200 border border-slate-300">
+                              {student.photo ? (
+                                <img src={student.photo} alt={student.name} className="h-full w-full object-cover" />
+                              ) : (
+                                <span className="text-lg">👤</span>
+                              )}
+                            </div>
+                            <div>
+                              <p className="font-bold text-[#0f2a4a] text-sm">{student.name}</p>
+                              <p className="text-slate-400 mt-0.5">ID: {student.studentId}</p>
+                            </div>
+                          </div>
                         </td>
                         <td className="px-6 py-5 font-bold text-[#0f2a4a] text-sm">{student.gpa.toFixed(2)}</td>
                         <td className="px-6 py-5">
@@ -313,9 +324,9 @@ export default function DepartmentStudentDetailsPage() {
                         </td>
                         <td className="px-6 py-5">
                           <span className={`inline-flex rounded-full px-3 py-1 font-bold ${
-                            student.internshipStatus === "Approved"
+                            student.internshipStatus === "Selected"
                               ? "bg-emerald-100 text-emerald-700"
-                              : student.internshipStatus === "Pending Approval"
+                              : student.internshipStatus === "Pending"
                               ? "bg-amber-100 text-amber-700"
                               : "bg-rose-100 text-rose-700"
                           }`}>
@@ -347,8 +358,8 @@ export default function DepartmentStudentDetailsPage() {
           </div>
         )}
 
-        {/* CONDITION 2: VIEW CV MODE -> SPLIT SCREEN LAYOUT */}
-        {detailMode === "cv" && activeStudent && (
+        {/* CONDITION 2: VIEW DOCUMENT MODE -> SPLIT SCREEN LAYOUT */}
+        {(detailMode === "cv" || detailMode === "certifications" || detailMode === "additional") && activeStudent && (
           <div className="grid gap-6 md:grid-cols-[320px_1fr] items-start animate-fadeIn">
             {/* Left Hand Sidebar */}
             <div className="rounded-2xl bg-white p-6 border border-slate-100 shadow-2xs flex flex-col items-center text-center">
@@ -399,65 +410,107 @@ export default function DepartmentStudentDetailsPage() {
               </div>
 
               <div className="w-full border-t border-slate-100 my-4"></div>
-              {activeStudent.cvDataUrl ? (
-                <div className="w-full text-left space-y-1.5 text-xs">
-                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Submission Details</p>
-                  <p className="text-slate-500">File Name: <span className="text-slate-800 font-medium truncate max-w-[180px] block">{activeStudent.cvFileName}</span></p>
-                  <p className="text-slate-500">Status: <span className="text-sky-600 font-bold inline-flex items-center gap-1">👁️ Review Mode</span></p>
-                </div>
-              ) : (
-                <p className="text-xs text-slate-400 italic text-left w-full">No resume uploaded yet.</p>
-              )}
+              
+              <div className="w-full flex flex-col gap-2">
+                <button
+                  type="button"
+                  onClick={() => openDetail(activeStudent, "profile")}
+                  className="w-full rounded-xl bg-slate-100 text-slate-700 px-4 py-2.5 text-xs font-bold shadow-xs hover:bg-slate-200 transition flex items-center justify-center gap-1.5 cursor-pointer"
+                >
+                  ← Back to Profile
+                </button>
+              </div>
             </div>
 
             {/* Right Hand PDF Mock Frame Box */}
-            <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden flex flex-col h-[700px]">
               {/* Document Header Controls Toolbar */}
               <div className="bg-slate-100 px-5 py-3 border-b border-slate-200 flex items-center justify-between text-xs text-slate-500">
-                <span className="font-bold flex items-center gap-1.5 text-slate-700">📄 CV Reviewer</span>
-                {activeStudent.cvDataUrl && (
-                  <div className="flex items-center gap-4">
+                <div className="font-bold flex items-center gap-2 text-slate-700">
+                  <span className="text-base">📄</span>
+                  <span className="uppercase tracking-wider">Document Viewer</span>
+                </div>
+                <div className="flex items-center gap-4">
+                  {detailMode === "cv" && (
                     <button
                       type="button"
                       onClick={handleDownloadCvFile}
-                      className="p-1 text-slate-600 hover:text-slate-900 transition bg-transparent border-none outline-none cursor-pointer flex items-center gap-1 font-semibold text-xs"
+                      className="p-1 text-sky-600 hover:text-sky-800 transition bg-transparent border-none outline-none cursor-pointer flex items-center gap-1 font-bold text-xs"
                     >
                       ⬇️ Download CV File
                     </button>
-                    {activeStudent.certificationsDataUrl && (
-                      <button
-                        type="button"
-                        onClick={handleDownloadCertifications}
-                        className="p-1 text-slate-600 hover:text-slate-900 transition bg-transparent border-none outline-none cursor-pointer flex items-center gap-1 font-semibold text-xs"
-                      >
-                        ⬇️ Download Certifications
-                      </button>
-                    )}
-                    {activeStudent.additionalItemsDataUrl && (
-                      <button
-                        type="button"
-                        onClick={handleDownloadAdditional}
-                        className="p-1 text-slate-600 hover:text-slate-900 transition bg-transparent border-none outline-none cursor-pointer flex items-center gap-1 font-semibold text-xs"
-                      >
-                        ⬇️ Download Additional Items
-                      </button>
-                    )}
-                  </div>
-                )}
+                  )}
+                  {detailMode === "certifications" && (
+                    <button
+                      type="button"
+                      onClick={handleDownloadCertifications}
+                      className="p-1 text-sky-600 hover:text-sky-800 transition bg-transparent border-none outline-none cursor-pointer flex items-center gap-1 font-bold text-xs"
+                    >
+                      ⬇️ Download Certifications
+                    </button>
+                  )}
+                  {detailMode === "additional" && (
+                    <button
+                      type="button"
+                      onClick={handleDownloadAdditional}
+                      className="p-1 text-sky-600 hover:text-sky-800 transition bg-transparent border-none outline-none cursor-pointer flex items-center gap-1 font-bold text-xs"
+                    >
+                      ⬇️ Download Additional Items
+                    </button>
+                  )}
+                </div>
               </div>
 
-              {/* Internal CV Sheet */}
-              {activeStudent.cvDataUrl ? (
-                <iframe 
-                  src={activeStudent.cvDataUrl} 
-                  className="w-full h-full min-h-[650px] border-0" 
-                  title={`${activeStudent.name} CV`}
-                />
-              ) : (
-                <div className="p-20 text-center text-slate-400 italic">
-                  This student has not yet uploaded a CV resume file.
-                </div>
-              )}
+              {/* Document Switcher Tabs */}
+              <div className="bg-slate-50 px-5 py-2 border-b border-slate-200 flex items-center gap-2 overflow-x-auto">
+                <button
+                  type="button"
+                  onClick={() => openDetail(activeStudent, "cv")}
+                  disabled={!activeStudent.cvDataUrl}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap ${detailMode === "cv" ? "bg-sky-600 text-white shadow-sm" : activeStudent.cvDataUrl ? "text-slate-600 hover:bg-slate-200" : "text-slate-300 cursor-not-allowed"}`}
+                >
+                  CV / Resume
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openDetail(activeStudent, "certifications")}
+                  disabled={!activeStudent.certificationsDataUrl}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap ${detailMode === "certifications" ? "bg-sky-600 text-white shadow-sm" : activeStudent.certificationsDataUrl ? "text-slate-600 hover:bg-slate-200" : "text-slate-300 cursor-not-allowed"}`}
+                >
+                  Certifications
+                </button>
+                <button
+                  type="button"
+                  onClick={() => openDetail(activeStudent, "additional")}
+                  disabled={!activeStudent.additionalItemsDataUrl}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold transition whitespace-nowrap ${detailMode === "additional" ? "bg-sky-600 text-white shadow-sm" : activeStudent.additionalItemsDataUrl ? "text-slate-600 hover:bg-slate-200" : "text-slate-300 cursor-not-allowed"}`}
+                >
+                  Additional Items
+                </button>
+              </div>
+
+              {/* Internal Sheet */}
+              <div className="flex-1 relative bg-slate-50">
+                {detailMode === "cv" ? (
+                  activeStudent.cvDataUrl ? (
+                    <iframe src={activeStudent.cvDataUrl} className="absolute inset-0 w-full h-full border-0" title={`${activeStudent.name} CV`} />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-slate-400 italic p-10 text-center">This student has not yet uploaded a CV resume file.</div>
+                  )
+                ) : detailMode === "certifications" ? (
+                  activeStudent.certificationsDataUrl ? (
+                    <iframe src={activeStudent.certificationsDataUrl} className="absolute inset-0 w-full h-full border-0" title={`${activeStudent.name} Certifications`} />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-slate-400 italic p-10 text-center">This student has not yet uploaded certifications.</div>
+                  )
+                ) : detailMode === "additional" ? (
+                  activeStudent.additionalItemsDataUrl ? (
+                    <iframe src={activeStudent.additionalItemsDataUrl} className="absolute inset-0 w-full h-full border-0" title={`${activeStudent.name} Additional Items`} />
+                  ) : (
+                    <div className="absolute inset-0 flex items-center justify-center text-slate-400 italic p-10 text-center">This student has not yet uploaded additional items.</div>
+                  )
+                ) : null}
+              </div>
             </div>
           </div>
         )}
@@ -528,6 +581,47 @@ export default function DepartmentStudentDetailsPage() {
                   </div>
                 </div>
               )}
+
+              <div className="space-y-4">
+                <div className="flex items-center gap-2 text-[#1e3d5f] font-bold text-xs uppercase tracking-wider">
+                  <span>📄</span> ATTACHED DOCUMENTS
+                </div>
+                <div className="pl-6 grid gap-4 sm:grid-cols-3">
+                  {activeStudent.cvDataUrl && (
+                    <button
+                      type="button"
+                      onClick={() => openDetail(activeStudent, "cv")}
+                      className="flex flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-sky-300 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer text-[#1e3d5f]"
+                    >
+                      <span className="text-3xl">📄</span>
+                      <span className="text-xs font-bold uppercase tracking-wider mt-2">CV / Resume</span>
+                    </button>
+                  )}
+                  {activeStudent.certificationsDataUrl && (
+                    <button
+                      type="button"
+                      onClick={() => openDetail(activeStudent, "certifications")}
+                      className="flex flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-sky-300 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer text-[#1e3d5f]"
+                    >
+                      <span className="text-3xl">📜</span>
+                      <span className="text-xs font-bold uppercase tracking-wider mt-2">Certifications</span>
+                    </button>
+                  )}
+                  {activeStudent.additionalItemsDataUrl && (
+                    <button
+                      type="button"
+                      onClick={() => openDetail(activeStudent, "additional")}
+                      className="flex flex-col items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:border-sky-300 hover:shadow-md hover:-translate-y-0.5 transition-all cursor-pointer text-[#1e3d5f]"
+                    >
+                      <span className="text-3xl">📎</span>
+                      <span className="text-xs font-bold uppercase tracking-wider mt-2">Additional Items</span>
+                    </button>
+                  )}
+                  {!activeStudent.cvDataUrl && !activeStudent.certificationsDataUrl && !activeStudent.additionalItemsDataUrl && (
+                    <p className="text-xs text-slate-400 italic">No documents attached.</p>
+                  )}
+                </div>
+              </div>
 
               <div className="space-y-4">
                 <div className="flex items-center gap-2 text-[#1e3d5f] font-bold text-xs uppercase tracking-wider">

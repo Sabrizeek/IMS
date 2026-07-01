@@ -17,9 +17,9 @@ async function listStudents(_req, res) {
         let status = "Not Selected";
         if (placement) {
           if (placement.approved) {
-            status = "Approved";
+            status = "Selected";
           } else if (placement.state === "selected") {
-            status = "Pending Approval";
+            status = "Pending";
           } else if (placement.state === "notSelected") {
             status = "Not Selected";
           }

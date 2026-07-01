@@ -1,6 +1,7 @@
 const InternshipApplication = require("../models/InternshipApplication");
 const User = require("../models/User");
 const Log = require("../models/Log");
+const StudentProfile = require("../models/StudentProfile");
 
 async function listMine(req, res) {
   try {
@@ -87,6 +88,11 @@ async function listAll(_req, res) {
     const applications = await InternshipApplication.find()
       .populate("user", "firstName lastName studentId email")
       .sort({ updatedAt: -1 });
+
+    const studentIds = applications.map(app => app.user?._id).filter(id => id);
+    const profiles = await StudentProfile.find({ user: { $in: studentIds } }).select("user photo");
+    const photoMap = {};
+    profiles.forEach(p => { photoMap[p.user.toString()] = p.photo; });
     
     // Format to align with department approvals table structure
     const formatted = applications.map(app => ({
@@ -95,6 +101,7 @@ async function listAll(_req, res) {
       id: app.user?.studentId || "",
       email: app.user?.email || "",
       studentUserId: app.user?._id || "", // Student Mongoose ID
+      photo: app.user ? (photoMap[app.user._id.toString()] || "") : "",
       company: app.companyName || "",
       role: app.jobPosition || "",
       date: app.submittedAt ? new Date(app.submittedAt).toLocaleDateString() : "",

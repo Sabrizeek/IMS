@@ -79,6 +79,7 @@ export default function PortfolioPage() {
   const [toastMessage, setToastMessage] = useState("");
   const [validationError, setValidationError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [activeDocument, setActiveDocument] = useState<"cv" | "certifications" | "additional">("cv");
 
   useEffect(() => {
     if (!ready || !user || user.role !== "student" || !profile) return;
@@ -363,15 +364,6 @@ export default function PortfolioPage() {
                 Build your student portfolio, upload a resume, and present your core technology stack in a single consistent interface.
               </p>
             </div>
-            {savedPortfolio && !isEditing ? (
-              <button
-                onClick={startEditing}
-                className="inline-flex items-center gap-2 rounded-full bg-navy-deep px-4 py-2 text-sm font-semibold text-white transition hover:bg-navy"
-              >
-                <Edit3 className="h-4 w-4" />
-                Edit portfolio
-              </button>
-            ) : null}
           </div>
 
           {toastMessage ? (
@@ -393,12 +385,34 @@ export default function PortfolioPage() {
                         {profile?.name || "Student"}
                       </h2>
                     </div>
-                    <span className="rounded-full bg-navy-deep/10 px-4 py-2 text-sm font-medium text-navy-deep">
-                      Saved on {new Date(savedPortfolio.savedAt).toLocaleDateString()}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={startEditing}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-white px-3 py-1.5 text-xs font-bold text-navy-deep shadow-sm transition hover:bg-slate-50 border border-slate-200"
+                      >
+                        <Edit3 className="h-3.5 w-3.5" />
+                        Edit details
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm("Delete this portfolio and start again?")) {
+                            resetPortfolio();
+                          }
+                        }}
+                        className="inline-flex items-center gap-1.5 rounded-full bg-rose-50 px-3 py-1.5 text-xs font-bold text-rose-600 shadow-sm transition hover:bg-rose-100 border border-rose-100"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        Delete
+                      </button>
+                      <span className="rounded-full bg-navy-deep/10 px-4 py-1.5 text-xs font-medium text-navy-deep">
+                        Saved on {new Date(savedPortfolio.savedAt).toLocaleDateString()}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_auto]">
+                  <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_1.5fr]">
                     <div className="space-y-6">
                       {savedPortfolio.projects?.map((proj: ProjectItem, index: number) => (
                         <div key={proj._id || proj.id || index} className="border-b border-navy/5 pb-4 last:border-0">
@@ -429,58 +443,44 @@ export default function PortfolioPage() {
                       ))}
                     </div>
 
-                    <div className="space-y-4 rounded-3xl bg-sky-soft/70 p-5 shadow-sm h-fit min-w-[240px]">
-                      <div className="space-y-2">
-                        {cvDataUrl && (
-                          <button
-                            type="button"
-                            onClick={downloadCv}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-navy-deep px-4 py-3 text-sm font-semibold text-white transition hover:bg-navy"
-                          >
-                            <Download className="h-4 w-4" />
-                            Download CV
-                          </button>
+                    <div className="space-y-4 rounded-3xl bg-white p-5 shadow-sm border border-navy/5 flex flex-col h-[700px] xl:h-auto xl:min-h-[700px]">
+                      <div className="flex-1 bg-slate-50 rounded-2xl overflow-hidden border border-navy/5 relative">
+                        {activeDocument === "cv" && cvDataUrl && (
+                          <iframe src={cvDataUrl} className="w-full h-full border-0 absolute inset-0" title="CV" />
                         )}
+                        {activeDocument === "certifications" && certificationsDataUrl && (
+                          <iframe src={certificationsDataUrl} className="w-full h-full border-0 absolute inset-0" title="Certifications" />
+                        )}
+                        {activeDocument === "additional" && additionalItemsDataUrl && (
+                          <iframe src={additionalItemsDataUrl} className="w-full h-full border-0 absolute inset-0" title="Additional Items" />
+                        )}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 mt-2 pt-3 border-t border-navy/5">
+                        <button
+                          type="button"
+                          onClick={() => setActiveDocument("cv")}
+                          className={`flex-1 rounded-xl px-3 py-2 text-xs font-bold transition shadow-sm whitespace-nowrap ${activeDocument === "cv" ? "bg-navy-deep text-white" : "bg-sky-soft text-navy-deep hover:bg-sky-soft/80"}`}
+                        >
+                          View CV
+                        </button>
                         {certificationsDataUrl && (
                           <button
                             type="button"
-                            onClick={downloadCertifications}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-navy-deep px-4 py-3 text-sm font-semibold text-white transition hover:bg-navy"
+                            onClick={() => setActiveDocument("certifications")}
+                            className={`flex-1 rounded-xl px-3 py-2 text-xs font-bold transition shadow-sm whitespace-nowrap ${activeDocument === "certifications" ? "bg-navy-deep text-white" : "bg-sky-soft text-navy-deep hover:bg-sky-soft/80"}`}
                           >
-                            <Download className="h-4 w-4" />
-                            Certifications
+                            View Certifications
                           </button>
                         )}
                         {additionalItemsDataUrl && (
                           <button
                             type="button"
-                            onClick={downloadAdditionalItems}
-                            className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-navy-deep px-4 py-3 text-sm font-semibold text-white transition hover:bg-navy"
+                            onClick={() => setActiveDocument("additional")}
+                            className={`flex-1 rounded-xl px-3 py-2 text-xs font-bold transition shadow-sm whitespace-nowrap ${activeDocument === "additional" ? "bg-navy-deep text-white" : "bg-sky-soft text-navy-deep hover:bg-sky-soft/80"}`}
                           >
-                            <Download className="h-4 w-4" />
-                            Additional Items
+                            View Additional Items
                           </button>
                         )}
-                        <button
-                          type="button"
-                          onClick={startEditing}
-                          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl border border-navy-deep/20 bg-white px-4 py-3 text-sm font-semibold text-navy-deep transition hover:bg-navy/5"
-                        >
-                          <Edit3 className="h-4 w-4" />
-                          Edit details
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (window.confirm("Delete this portfolio and start again?")) {
-                              resetPortfolio();
-                            }
-                          }}
-                          className="inline-flex w-full items-center justify-center gap-2 rounded-2xl bg-red-500 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-600"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                          Delete portfolio
-                        </button>
                       </div>
                     </div>
                   </div>
