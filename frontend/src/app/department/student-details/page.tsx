@@ -58,6 +58,7 @@ export default function DepartmentStudentDetailsPage() {
   const [selectedSpecialization, setSelectedSpecialization] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
   const [selectedGpaOrder, setSelectedGpaOrder] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
   const [activeStudent, setActiveStudent] = useState<StudentData | null>(null);
   const [detailMode, setDetailMode] = useState<"cv" | "certifications" | "additional" | "profile" | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -89,6 +90,16 @@ export default function DepartmentStudentDetailsPage() {
   const filteredStudents = useMemo(() => {
     let list = [...students];
 
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      list = list.filter(
+        (student) =>
+          student.name?.toLowerCase().includes(q) ||
+          student.studentId?.toLowerCase().includes(q) ||
+          student.email?.toLowerCase().includes(q)
+      );
+    }
+
     if (selectedSpecialization) {
       list = list.filter((student) => student.specialization === selectedSpecialization);
     }
@@ -104,7 +115,7 @@ export default function DepartmentStudentDetailsPage() {
     }
 
     return list;
-  }, [students, selectedSpecialization, selectedStatus, selectedGpaOrder]);
+  }, [students, selectedSpecialization, selectedStatus, selectedGpaOrder, searchQuery]);
 
   const openDetail = async (student: StudentData, mode: "cv" | "certifications" | "additional" | "profile") => {
     try {
@@ -232,8 +243,9 @@ export default function DepartmentStudentDetailsPage() {
             </div>
 
             {/* Filter Hub */}
-            <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-[240px_240px_240px]">
-              <label className="block">
+            <div className="mt-8 flex flex-col lg:flex-row gap-5 lg:items-end lg:justify-between">
+              <div className="grid gap-5 sm:grid-cols-3 lg:grid-cols-[240px_240px_240px]">
+                <label className="block">
                 <span className="text-xs font-bold text-[#0f2a4a] uppercase tracking-wider">Specialization</span>
                 <select
                   value={selectedSpecialization}
@@ -272,11 +284,29 @@ export default function DepartmentStudentDetailsPage() {
                   style={{ backgroundImage: `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'></polyline></svg>")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center', backgroundSize: '16px' }}
                 >
                   <option value="">All GPA</option>
-                  {gpaOptions.map((order) => (
-                    <option key={order} value={order}>{order}</option>
-                  ))}
+                  <option value="Higher to Lower">Highest to Lowest</option>
+                  <option value="Lower to Higher">Lowest to Highest</option>
                 </select>
               </label>
+              </div>
+
+              <div className="w-full lg:w-[240px]">
+                <label className="block">
+                  <span className="text-xs font-bold text-[#0f2a4a] uppercase tracking-wider">Search</span>
+                  <div className="relative mt-2">
+                    <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                      <span className="text-slate-400 text-sm">🔍</span>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Name, ID, Email..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="block w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-9 pr-4 text-sm text-slate-800 placeholder-slate-400 shadow-sm focus:border-navy focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy transition"
+                    />
+                  </div>
+                </label>
+              </div>
             </div>
 
             {/* Students Table */}

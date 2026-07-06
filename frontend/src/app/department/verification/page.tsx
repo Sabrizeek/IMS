@@ -27,6 +27,7 @@ export default function DepartmentVerificationPage() {
   const [requests, setRequests] = useState<AccountRequestData[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeFilter, setActiveFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
+  const [searchQuery, setSearchQuery] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const fetchRequests = async () => {
@@ -110,6 +111,21 @@ export default function DepartmentVerificationPage() {
     }
   };
 
+  const filteredRequests = useMemo(() => {
+    let result = requests;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(
+        (r) =>
+          r.firstName.toLowerCase().includes(q) ||
+          r.lastName?.toLowerCase().includes(q) ||
+          r.studentId.toLowerCase().includes(q) ||
+          r.email.toLowerCase().includes(q)
+      );
+    }
+    return result;
+  }, [requests, searchQuery]);
+
   if (!ready || loading) {
     return (
       <main className="flex min-h-screen items-center justify-center bg-sky text-navy-deep">
@@ -154,7 +170,18 @@ export default function DepartmentVerificationPage() {
                   </button>
                 ))}
               </div>
-              <p className="text-sm text-slate-500">Filter registrations by verification state.</p>
+              <div className="relative w-full sm:max-w-xs">
+                <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
+                  <span className="text-slate-400">🔍</span>
+                </div>
+                <input
+                  type="text"
+                  placeholder="Search by name, ID, email..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="block w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-800 placeholder-slate-400 shadow-sm focus:border-navy-deep focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy-deep transition"
+                />
+              </div>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full border-collapse text-left text-sm">
@@ -164,20 +191,21 @@ export default function DepartmentVerificationPage() {
                     <th className="px-6 py-4">Student ID</th>
                     <th className="px-6 py-4">University Email</th>
                     <th className="px-6 py-4">Request Date</th>
+                    {activeFilter === "all" && <th className="px-6 py-4">Status</th>}
                     {activeFilter === "approved" && <th className="px-6 py-4">Temp Password</th>}
                     {activeFilter === "rejected" && <th className="px-6 py-4">Rejection Notes</th>}
                     <th className="px-6 py-4 text-right">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {requests.length === 0 ? (
+                  {filteredRequests.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-6 py-8 text-center text-slate-500 italic">
                         No requests found in this section.
                       </td>
                     </tr>
                   ) : (
-                    requests.map((row) => (
+                    filteredRequests.map((row) => (
                       <tr key={row._id} className="border-b border-slate-200 last:border-b-0">
                         <td className="px-6 py-5">
                           <div className="flex items-center gap-3">
@@ -195,6 +223,18 @@ export default function DepartmentVerificationPage() {
                         <td className="px-6 py-4 text-sky-700 font-medium">{row.email}</td>
                         <td className="px-6 py-4 text-slate-500">{new Date(row.createdAt).toLocaleDateString()}</td>
                         
+                        {activeFilter === "all" && (
+                          <td className="px-6 py-4">
+                            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] uppercase font-black tracking-widest ${
+                              row.status === 'approved' ? 'bg-emerald-100 text-emerald-800' :
+                              row.status === 'rejected' ? 'bg-rose-100 text-rose-800' :
+                              'bg-amber-100 text-amber-800'
+                            }`}>
+                              {row.status}
+                            </span>
+                          </td>
+                        )}
+
                         {activeFilter === "approved" && (
                           <td className="px-6 py-4 font-mono font-bold text-emerald-700">{row.tempPassword || "—"}</td>
                         )}
@@ -203,7 +243,7 @@ export default function DepartmentVerificationPage() {
                         )}
 
                         <td className="px-6 py-4 space-x-2 whitespace-nowrap text-right flex justify-end items-center">
-                          {activeFilter === "pending" && (
+                          {row.status === "pending" && (
                             <>
                               <button
                                 onClick={() => handleAction(row._id, "approved")}
