@@ -151,7 +151,7 @@ export default function ManagementHub() {
                     : "Undergraduate"}
                 </p>
                 <span className="mt-3 rounded-md bg-navy-deep px-3 py-1.5 text-xs font-semibold text-white">
-                  CURRENT CGPA : {cgpa.toFixed(2)}
+                  CURRENT CGPA : {cgpa !== null && cgpa !== undefined ? cgpa.toFixed(2) : "N/A"}
                 </span>
               </div>
 
