@@ -24,6 +24,18 @@ export default function StudentSignupPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    if (!form.firstName.trim() || !form.lastName.trim()) {
+      setError("First name and last name are required.");
+      return;
+    }
+
+    const studentIdRegex = /^SC\/\d{4}\/\d{5}$/;
+    if (!studentIdRegex.test(form.studentId.trim())) {
+      setError("Student ID must be in the format SC/YYYY/DDDDD (e.g., SC/2022/12793).");
+      return;
+    }
+
     try {
       const res = await fetch("http://localhost:5000/api/account-requests", {
         method: "POST",

@@ -18,6 +18,8 @@ async function listStudents(_req, res) {
         if (placement) {
           if (placement.approved) {
             status = "Selected";
+          } else if (placement.rejectionReason) {
+            status = "Not Selected";
           } else if (placement.state === "selected") {
             status = "Pending";
           } else if (placement.state === "notSelected") {

@@ -15,8 +15,13 @@ function generateTempPassword() {
 async function createRequest(req, res) {
   try {
     const { firstName, lastName, studentId, email } = req.body;
-    if (!firstName || !studentId || !email) {
-      return res.status(400).json({ message: "First name, student ID, and email are required" });
+    if (!firstName || !lastName || !studentId || !email) {
+      return res.status(400).json({ message: "First name, last name, student ID, and email are required" });
+    }
+
+    const studentIdRegex = /^SC\/\d{4}\/\d{5}$/;
+    if (!studentIdRegex.test(studentId.trim())) {
+      return res.status(400).json({ message: "Student ID must be in the format SC/YYYY/DDDDD" });
     }
 
     const emailLower = email.toLowerCase().trim();
