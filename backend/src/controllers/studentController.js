@@ -1,6 +1,6 @@
 const User = require("../models/User");
 const StudentProfile = require("../models/StudentProfile");
-const StudentGrade = require("../models/StudentGrade");
+const StudentCGPA = require("../models/StudentCGPA");
 const AccountRequest = require("../models/AccountRequest");
 const InternshipApplication = require("../models/InternshipApplication");
 
@@ -11,7 +11,7 @@ async function listStudents(_req, res) {
     const studentData = await Promise.all(
       users.map(async (user) => {
         const profile = await StudentProfile.findOne({ user: user._id });
-        const grades = await StudentGrade.findOne({ user: user._id });
+        const cgpaDoc = await StudentCGPA.findOne({ registrationNo: (user.studentId || "").toUpperCase() });
         const placement = await InternshipApplication.findOne({ user: user._id });
         
         let status = "Not Selected";
@@ -34,8 +34,8 @@ async function listStudents(_req, res) {
           email: user.email,
           specialization: profile?.specialization || "",
           specializationConfirmed: profile?.specializationConfirmed || false,
-          gpa: grades?.gpa || 0,
-          totalCredits: grades?.totalCredits || 0,
+          gpa: cgpaDoc ? cgpaDoc.cgpa : 0,
+          totalCredits: 0,
           internshipStatus: status,
           linkedin: profile?.linkedin || "",
           github: profile?.github || "",
@@ -82,10 +82,80 @@ async function getDashboardStats(req, res) {
     const activeStudentsCount = await StudentProfile.countDocuments({ specializationConfirmed: true });
     const pendingApprovalsCount = await InternshipApplication.countDocuments({ approved: false, state: "selected" });
 
+    const { specialization, gpa, internType } = req.query;
+
+    const pipeline = [
+      {
+        $lookup: {
+          from: "studentprofiles",
+          localField: "user",
+          foreignField: "user",
+          as: "profile"
+        }
+      },
+      {
+        $lookup: {
+          from: "studentcgpas",
+          let: { studentId: { $toUpper: { $arrayElemAt: ["$profile.studentId", 0] } } },
+          pipeline: [
+            { $match: { $expr: { $eq: ["$registrationNo", "$$studentId"] } } }
+          ],
+          as: "cgpa"
+        }
+      }
+    ];
+
+    const matchStage = {
+      state: "selected",
+      companyName: { $exists: true, $ne: "" },
+      approved: true
+    };
+
+    if (specialization) {
+      matchStage["profile.specialization"] = specialization;
+    }
+
+    if (internType) {
+      matchStage["jobPosition"] = internType;
+    }
+
+    if (gpa) {
+      if (gpa === "high") {
+        matchStage["cgpa.cgpa"] = { $gte: 3.5 };
+      } else if (gpa === "mid") {
+        matchStage["cgpa.cgpa"] = { $gte: 3.0, $lt: 3.5 };
+      } else if (gpa === "low") {
+        matchStage["cgpa.cgpa"] = { $lt: 3.0 };
+      }
+    }
+
+    pipeline.push({ $match: matchStage });
+    pipeline.push({ 
+      $group: { 
+        _id: "$companyName", 
+        count: { $sum: 1 },
+        students: { 
+          $push: { 
+            name: { $arrayElemAt: ["$profile.name", 0] },
+            position: "$jobPosition"
+          } 
+        }
+      } 
+    });
+    pipeline.push({ $sort: { count: -1 } });
+    pipeline.push({ $limit: 6 });
+
+    const companyPlacements = await InternshipApplication.aggregate(pipeline);
+
     res.json({
       registrationRequestsCount,
       activeStudentsCount,
       pendingApprovalsCount,
+      companyPlacements: companyPlacements.map(p => ({ 
+        name: p._id, 
+        count: p.count,
+        students: p.students 
+      }))
     });
   } catch (error) {
     res.status(500).json({ message: error.message });

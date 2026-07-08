@@ -8,7 +8,7 @@ import { useState, useEffect } from "react";
 
 const links = [
   { label: "Overview", href: "/student/dashboard" },
-  { label: "GPA Calculator", href: "/student/gpa" },
+  { label: "Academic Performance", href: "/student/academic-performance" },
   { label: "Portfolio", href: "/student/portfolio" },
   { label: "InternshipStatus", href: "/student/internship-status" },
   { label: "Record Book", href: "/student/record-book" },

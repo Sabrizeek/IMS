@@ -16,6 +16,10 @@ const accountRequestRoutes = require("./routes/accountRequestRoutes");
 const subjectRoutes = require("./routes/subjectRoutes");
 const internshipRoutes = require("./routes/internshipRoutes");
 const skillRoutes = require("./routes/skillRoutes");
+const academicYearRoutes = require("./routes/academicYearRoutes");
+const semesterRoutes = require("./routes/semesterRoutes");
+const gpaSubjectRoutes = require("./routes/gpaSubjectRoutes");
+const resultsRoutes = require("./routes/resultsRoutes");
 
 const app = express();
 
@@ -45,6 +49,10 @@ app.use("/api/account-requests", accountRequestRoutes);
 app.use("/api/subjects", subjectRoutes);
 app.use("/api/internships", internshipRoutes);
 app.use("/api/skills", skillRoutes);
+app.use("/api/academic-years", academicYearRoutes);
+app.use("/api/semesters", semesterRoutes);
+app.use("/api/gpa-subjects", gpaSubjectRoutes);
+app.use("/api/results", resultsRoutes);
 
 app.use(notFound);
 app.use(errorHandler);

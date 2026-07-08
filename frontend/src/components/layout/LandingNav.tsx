@@ -2,7 +2,7 @@ import Link from "next/link";
 
 const links = [
   { label: "Overview", href: "#overview" },
-  { label: "GPA Calculator", href: "/student/auth" },
+  { label: "Academic Performance", href: "/student/auth" },
   { label: "Student CV", href: "/student/auth" },
   { label: "Internship Status", href: "/student/auth" },
   { label: "Record Book", href: "/student/auth" },

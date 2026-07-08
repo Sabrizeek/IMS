@@ -19,7 +19,6 @@ import { StudentNav } from "@/components/layout/StudentNav";
 import { Footer } from "@/components/layout/Footer";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthGuard } from "@/hooks/useAuthGuard";
-import { calculateGpa } from "@/lib/gpa";
 
 export default function ManagementHub() {
   const router = useRouter();
@@ -27,6 +26,7 @@ export default function ManagementHub() {
   useAuthGuard("student", "/student/login");
   const [hasRejection, setHasRejection] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+  const [cgpa, setCgpa] = useState<number>(0);
 
   useEffect(() => {
     if (ready && user?.role === "student") {
@@ -48,10 +48,19 @@ export default function ManagementHub() {
           }
         })
         .catch(() => {});
+        
+      fetch("http://localhost:5000/api/results/my-performance", {
+        headers: { Authorization: `Bearer ${sessionStorage.getItem("ims.student.token")}` },
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.cgpa !== undefined) {
+            setCgpa(data.cgpa);
+          }
+        })
+        .catch(() => {});
     }
   }, [ready, user, router]);
-
-  const gpa = useMemo(() => calculateGpa(semesters), [semesters]);
 
   if (!ready) {
     return (
@@ -142,7 +151,7 @@ export default function ManagementHub() {
                     : "Undergraduate"}
                 </p>
                 <span className="mt-3 rounded-md bg-navy-deep px-3 py-1.5 text-xs font-semibold text-white">
-                  CURRENT GPA : {gpa.toFixed(2)}
+                  CURRENT CGPA : {cgpa.toFixed(2)}
                 </span>
               </div>
 
@@ -208,10 +217,10 @@ export default function ManagementHub() {
             <div className="grid gap-6 lg:col-span-2 lg:auto-rows-min sm:grid-cols-2">
               <ModuleCard
                 icon={<Calculator className="h-6 w-6" />}
-                title="GPA Calculator"
-                body="Calculate and simulate your academic standing. Estimate final results based on target grades."
-                cta="Open Module →"
-                href="/student/gpa"
+                title="Academic Performance"
+                body="View your centrally managed CGPA, semester results, and subject grades."
+                cta="View Results →"
+                href="/student/academic-performance"
               />
               <ModuleCard
                 icon={<FileText className="h-6 w-6" />}

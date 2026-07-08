@@ -117,6 +117,24 @@ export default function DepartmentStudentDetailsPage() {
     return list;
   }, [students, selectedSpecialization, selectedStatus, selectedGpaOrder, searchQuery]);
 
+  const handleDownloadStudents = () => {
+    const headers = ["Name", "Student ID", "Email", "GPA", "Specialization", "Internship Status"];
+    let csv = headers.join(",") + "\n";
+    filteredStudents.forEach((student) => {
+      csv += `"${student.name}","${student.id}","${student.email}","${student.gpa.toFixed(2)}","${student.specialization || ''}","${student.internshipStatus || ''}"\n`;
+    });
+    
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "student_details.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const openDetail = async (student: StudentData, mode: "cv" | "certifications" | "additional" | "profile") => {
     try {
       const token = sessionStorage.getItem("ims.department.token");
@@ -238,7 +256,7 @@ export default function DepartmentStudentDetailsPage() {
               </div>
               <div className="rounded-2xl bg-[#1e344e] px-7 py-5 text-white shadow-xs text-right min-w-[260px]">
                 <p className="text-[11px] uppercase tracking-[0.2em] text-slate-300 font-bold">Total Registered Students</p>
-                <p className="mt-2 text-4xl font-black">{students.length}</p>
+                <p className="mt-2 text-4xl font-black">{filteredStudents.length}</p>
               </div>
             </div>
 
@@ -306,6 +324,15 @@ export default function DepartmentStudentDetailsPage() {
                     />
                   </div>
                 </label>
+              </div>
+
+              <div className="flex items-end mb-2">
+                <button
+                  onClick={handleDownloadStudents}
+                  className="w-full lg:w-auto rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-navy-deep shadow-sm whitespace-nowrap"
+                >
+                  Download CSV
+                </button>
               </div>
             </div>
 

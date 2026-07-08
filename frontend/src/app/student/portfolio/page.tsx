@@ -47,8 +47,6 @@ const TECHNOLOGIES = [
   "Linux",
 ];
 
-const ALLOWED_TYPES = ["application/pdf", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"];
-
 function getPortfolioStorageKey(userEmail: string) {
   return `${STORAGE_PREFIX}.${userEmail}`;
 }
@@ -121,10 +119,20 @@ export default function PortfolioPage() {
 
   const handleFileChange = async (file: File | null, category: "cv" | "cert" | "add") => {
     if (!file) return;
-    if (!ALLOWED_TYPES.includes(file.type)) {
-      setValidationError("Please choose a PDF or DOCX file.");
-      return;
+
+    if (category === "cv") {
+      if (file.type !== "application/pdf") {
+        setValidationError("CV must be a PDF file.");
+        return;
+      }
+    } else {
+      const allowed = ["application/pdf", "image/jpeg", "image/png"];
+      if (!allowed.includes(file.type)) {
+        setValidationError("Please choose a PDF, JPG, or PNG file.");
+        return;
+      }
     }
+
     if (file.size > 5 * 1024 * 1024) {
       setValidationError("The file must be 5MB or smaller.");
       return;
@@ -508,7 +516,7 @@ export default function PortfolioPage() {
                         <p className="text-sm font-semibold text-navy-deep">
                           {cvFileName ? "Resume ready to upload" : "Drag & Drop files here"}
                         </p>
-                        <p className="text-xs text-navy-deep/70">PDF or DOCX (Max 5MB)</p>
+                        <p className="text-xs text-navy-deep/70">PDF only (Max 5MB)</p>
                         {cvFileName ? (
                           <div className="mt-2 flex flex-col items-center gap-1 text-xs text-navy-deep/80 sm:flex-row sm:justify-center">
                             <span className="rounded-full bg-white/80 px-2 py-1 font-medium shadow-sm truncate max-w-[150px]">{cvFileName}</span>
@@ -520,7 +528,7 @@ export default function PortfolioPage() {
                           </div>
                         )}
                       </div>
-                      <input type="file" accept=".pdf,.docx" className="sr-only" onChange={(e) => handleFileChange(e.target.files?.[0] ?? null, "cv")} />
+                      <input type="file" accept=".pdf" className="sr-only" onChange={(e) => handleFileChange(e.target.files?.[0] ?? null, "cv")} />
                     </label>
                   </div>
 
@@ -534,7 +542,7 @@ export default function PortfolioPage() {
                         <p className="text-sm font-semibold text-navy-deep">
                           {certificationsFileName ? "Certifications ready" : "Drag & Drop files here"}
                         </p>
-                        <p className="text-xs text-navy-deep/70">PDF or DOCX (Max 5MB)</p>
+                        <p className="text-xs text-navy-deep/70">PDF, JPG, or PNG (Max 5MB)</p>
                         {certificationsFileName ? (
                           <div className="mt-2 flex flex-col items-center gap-1 text-xs text-navy-deep/80 sm:flex-row sm:justify-center">
                             <span className="rounded-full bg-white/80 px-2 py-1 font-medium shadow-sm truncate max-w-[150px]">{certificationsFileName}</span>
@@ -546,7 +554,7 @@ export default function PortfolioPage() {
                           </div>
                         )}
                       </div>
-                      <input type="file" accept=".pdf,.docx" className="sr-only" onChange={(e) => handleFileChange(e.target.files?.[0] ?? null, "cert")} />
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="sr-only" onChange={(e) => handleFileChange(e.target.files?.[0] ?? null, "cert")} />
                     </label>
                   </div>
 
@@ -560,7 +568,7 @@ export default function PortfolioPage() {
                         <p className="text-sm font-semibold text-navy-deep">
                           {additionalItemsFileName ? "Items ready" : "Drag & Drop files here"}
                         </p>
-                        <p className="text-xs text-navy-deep/70">PDF or DOCX (Max 5MB)</p>
+                        <p className="text-xs text-navy-deep/70">PDF, JPG, or PNG (Max 5MB)</p>
                         {additionalItemsFileName ? (
                           <div className="mt-2 flex flex-col items-center gap-1 text-xs text-navy-deep/80 sm:flex-row sm:justify-center">
                             <span className="rounded-full bg-white/80 px-2 py-1 font-medium shadow-sm truncate max-w-[150px]">{additionalItemsFileName}</span>
@@ -572,7 +580,7 @@ export default function PortfolioPage() {
                           </div>
                         )}
                       </div>
-                      <input type="file" accept=".pdf,.docx" className="sr-only" onChange={(e) => handleFileChange(e.target.files?.[0] ?? null, "add")} />
+                      <input type="file" accept=".pdf,.jpg,.jpeg,.png" className="sr-only" onChange={(e) => handleFileChange(e.target.files?.[0] ?? null, "add")} />
                     </label>
                   </div>
 

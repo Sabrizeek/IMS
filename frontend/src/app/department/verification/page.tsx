@@ -112,19 +112,34 @@ export default function DepartmentVerificationPage() {
   };
 
   const filteredRequests = useMemo(() => {
-    let result = requests;
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter(
-        (r) =>
-          r.firstName.toLowerCase().includes(q) ||
-          r.lastName?.toLowerCase().includes(q) ||
-          r.studentId.toLowerCase().includes(q) ||
-          r.email.toLowerCase().includes(q)
-      );
-    }
-    return result;
-  }, [requests, searchQuery]);
+    const q = searchQuery.toLowerCase().trim();
+    return requests.filter((r) => {
+      const searchMatch = (r.firstName + " " + r.lastName).toLowerCase().includes(q) ||
+                          r.studentId.toLowerCase().includes(q) ||
+                          r.email.toLowerCase().includes(q);
+      if (!searchMatch) return false;
+      if (activeFilter === "all") return true;
+      return r.status === activeFilter;
+    });
+  }, [requests, searchQuery, activeFilter]);
+
+  const handleDownload = () => {
+    const headers = ["Name", "Student ID", "University Email", "Request Date", "Status"];
+    let csv = headers.join(",") + "\n";
+    filteredRequests.forEach((row) => {
+      csv += `"${row.firstName} ${row.lastName || ''}","${row.studentId}","${row.email}","${new Date(row.createdAt).toLocaleDateString()}","${row.status}"\n`;
+    });
+    
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "registration_verifications.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   if (!ready || loading) {
     return (
@@ -182,6 +197,12 @@ export default function DepartmentVerificationPage() {
                   className="block w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-800 placeholder-slate-400 shadow-sm focus:border-navy-deep focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy-deep transition"
                 />
               </div>
+              <button
+                onClick={handleDownload}
+                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-navy-deep shadow-sm ml-auto sm:ml-2 whitespace-nowrap"
+              >
+                Download CSV
+              </button>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full border-collapse text-left text-sm">

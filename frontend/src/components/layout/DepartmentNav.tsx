@@ -10,6 +10,7 @@ const links = [
   { label: "Verification", href: "/department/verification" },
   { label: "Student Details", href: "/department/student-details" },
   { label: "Approvals", href: "/department/approvals" },
+  { label: "GPA Management", href: "/department/gpa-management" },
 ];
 
 export function DepartmentNav() {

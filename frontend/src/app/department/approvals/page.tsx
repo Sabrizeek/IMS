@@ -103,6 +103,24 @@ export default function DepartmentApprovalsPage() {
     });
   }, [placements, activeTab, searchQuery]);
 
+  const handleDownloadPlacements = () => {
+    const headers = ["Student Name", "Registration No", "Company", "Job Position", "Start Date", "Status"];
+    let csv = headers.join(",") + "\n";
+    filteredPlacements.forEach((p) => {
+      csv += `"${p.student || ''}","${p.id || ''}","${p.company || ''}","${p.role || ''}","${p.internshipStartDate || ''}","${p.status || ''}"\n`;
+    });
+    
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "internship_approvals.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const openReview = (request: PlacementRequest) => {
     router.push(`/department/approvals/${request._id}`);
   };
@@ -321,6 +339,12 @@ export default function DepartmentApprovalsPage() {
                   className="block w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm text-slate-800 placeholder-slate-400 shadow-sm focus:border-navy-deep focus:bg-white focus:outline-none focus:ring-1 focus:ring-navy-deep transition"
                 />
               </div>
+              <button
+                onClick={handleDownloadPlacements}
+                className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-600 transition hover:bg-slate-50 hover:text-navy-deep shadow-sm ml-auto sm:ml-2 whitespace-nowrap"
+              >
+                Download CSV
+              </button>
             </div>
             <div className="overflow-x-auto">
               <table className="min-w-full text-left text-xs">
