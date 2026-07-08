@@ -39,13 +39,11 @@ async function getTemplate(req, res) {
     const workbook = new ExcelJS.Workbook();
     const sheet = workbook.addWorksheet("Results");
 
-    // Build header row: NAME | Nu | STUDENT NO | CODE1 | (empty) | CODE2 | (empty) | ... | Total
-    const headers = ["NAME", "Nu", "STUDENT NO"];
+    // Build header row: STUDENT NO | NAME | CODE1 | CODE2 | ...
+    const headers = ["STUDENT NO", "NAME"];
     for (const sub of subjects) {
       headers.push(sub.subjectCode.toUpperCase()); // Grade column
-      headers.push(" ");                            // Internal-point placeholder (ignored on parse)
     }
-    headers.push("Total");
     sheet.addRow(headers);
 
     // Style header row
@@ -56,11 +54,10 @@ async function getTemplate(req, res) {
     headerRow.alignment = { horizontal: "center" };
 
     // Set column widths
-    sheet.getColumn(1).width = 30; // NAME
-    sheet.getColumn(2).width = 8;  // Nu
-    sheet.getColumn(3).width = 20; // STUDENT NO
-    for (let i = 4; i < headers.length; i++) {
-      sheet.getColumn(i).width = subjects[(Math.floor((i - 4) / 2))] ? 10 : 8;
+    sheet.getColumn(1).width = 20; // STUDENT NO
+    sheet.getColumn(2).width = 30; // NAME
+    for (let i = 3; i <= headers.length; i++) {
+      sheet.getColumn(i).width = 12; // Subject columns
     }
 
     // Add a metadata comment row so parsers know which columns are grades
@@ -112,14 +109,26 @@ async function uploadResults(req, res) {
 
     // Step 1: Scan for header row where col[0]="NAME" and col[2]="STUDENT NO"
     let headerRowIndex = -1;
+    let studentNoCol = -1;
+    let nameCol = -1;
     const subjectColIndices = new Map(); // colIndex → subjectCode
 
     sheet.eachRow((row, rowNumber) => {
       if (headerRowIndex !== -1) return;
       const col0 = String(row.getCell(1).value || "").trim().toUpperCase();
-      const col2 = String(row.getCell(3).value || "").trim().toUpperCase();
-      if (col0 === "NAME" && col2 === "STUDENT NO") {
+      const col1 = String(row.getCell(2).value || "").trim().toUpperCase();
+      
+      if (col0 === "STUDENT NO" && col1 === "NAME") {
         headerRowIndex = rowNumber;
+        studentNoCol = 1;
+        nameCol = 2;
+      } else if (col0 === "NAME" && col1 === "STUDENT NO") {
+        headerRowIndex = rowNumber;
+        studentNoCol = 2;
+        nameCol = 1;
+      }
+
+      if (headerRowIndex !== -1) {
         // Step 2: Walk columns to find subject code columns, skip empty/space placeholders
         row.eachCell({ includeEmpty: true }, (cell, colNum) => {
           const val = String(cell.value || "").trim().toUpperCase();
@@ -131,7 +140,7 @@ async function uploadResults(req, res) {
     });
 
     if (headerRowIndex === -1)
-      return res.status(422).json({ errors: [{ row: null, message: 'Header row not found. Expected row with "NAME" in col A and "STUDENT NO" in col C.' }] });
+      return res.status(422).json({ errors: [{ row: null, message: 'Header row not found. Expected row with "STUDENT NO" and "NAME" in the first two columns.' }] });
 
     // ── Validation pass ───────────────────────────────────────────────────────
     const errors = [];
@@ -147,8 +156,8 @@ async function uploadResults(req, res) {
     sheet.eachRow((row, rowNumber) => {
       if (rowNumber <= headerRowIndex) return; // skip header and above
 
-      const studentName = String(row.getCell(1).value || "").trim();
-      const registrationNo = String(row.getCell(3).value || "").trim().toUpperCase();
+      const registrationNo = String(row.getCell(studentNoCol).value || "").trim().toUpperCase();
+      const studentName = String(row.getCell(nameCol).value || "").trim();
 
       // Skip completely empty rows
       if (!studentName && !registrationNo) return;
@@ -259,38 +268,36 @@ async function uploadResults(req, res) {
 // Runs in a Mongoose transaction — publishes results, locks semester, calcs GPAs
 // ─────────────────────────────────────────────────────────────────────────────
 async function publishResults(req, res) {
-  const session = await mongoose.startSession();
-  session.startTransaction();
   let semesterLocked = false;
   let yearLocked = false;
 
   try {
-    const upload = await ResultUpload.findById(req.params.uploadId).session(session);
-    if (!upload) { await session.abortTransaction(); return res.status(404).json({ message: "Upload not found" }); }
-    if (upload.isPublished) { await session.abortTransaction(); return res.status(409).json({ message: "Upload already published" }); }
+    const upload = await ResultUpload.findById(req.params.uploadId);
+    if (!upload) return res.status(404).json({ message: "Upload not found" });
+    if (upload.isPublished) return res.status(409).json({ message: "Upload already published" });
 
-    const semester = await Semester.findById(upload.semesterId).session(session);
-    if (!semester) { await session.abortTransaction(); return res.status(404).json({ message: "Semester not found" }); }
+    const semester = await Semester.findById(upload.semesterId);
+    if (!semester) return res.status(404).json({ message: "Semester not found" });
 
-    const academicYear = await AcademicYear.findById(semester.academicYearId).session(session);
-    if (!academicYear) { await session.abortTransaction(); return res.status(404).json({ message: "Academic year not found" }); }
+    const academicYear = await AcademicYear.findById(semester.academicYearId);
+    if (!academicYear) return res.status(404).json({ message: "Academic year not found" });
 
     // 1. Lock semester + academic year
     semester.isLocked = true;
-    await semester.save({ session });
+    await semester.save();
     semesterLocked = true;
 
     academicYear.isLocked = true;
-    await academicYear.save({ session });
+    await academicYear.save();
     yearLocked = true;
 
     // 2. Mark upload as published
     upload.isPublished = true;
-    await upload.save({ session });
+    await upload.save();
 
     // 3. Repeat Module Rule (Global Scope)
     // Find all records in this upload, and mark older published records for the same (regNo + subjectCode) as false
-    const uploadResults = await StudentResult.find({ resultUploadId: upload._id }).session(session);
+    const uploadResults = await StudentResult.find({ resultUploadId: upload._id });
     const registrationNos = [...new Set(uploadResults.map(r => r.registrationNo))];
     const affectedPastRecords = new Map(); // pastSemesterId -> Set of registrationNos
 
@@ -300,11 +307,11 @@ async function publishResults(req, res) {
         subjectCode: row.subjectCode,
         isLatestAttempt: true,
         _id: { $ne: row._id }
-      }).session(session);
+      });
 
       for (const old of olderRecords) {
         old.isLatestAttempt = false;
-        await old.save({ session });
+        await old.save();
         const semStr = old.semesterId.toString();
         if (!affectedPastRecords.has(semStr)) affectedPastRecords.set(semStr, new Set());
         affectedPastRecords.get(semStr).add(old.registrationNo);
@@ -317,18 +324,18 @@ async function publishResults(req, res) {
         registrationNo: regNo,
         semesterId: upload.semesterId,
         isLatestAttempt: true,
-      }).session(session);
+      });
       const { semesterGPA, totalCredits } = calculateSemesterGPA(rows);
       await StudentSemesterGPA.findOneAndUpdate(
         { registrationNo: regNo, semesterId: upload.semesterId },
         { semesterGPA, totalCredits, calculatedAt: new Date() },
-        { upsert: true, new: true, session }
+        { upsert: true, new: true }
       );
     }
 
     // 5. Recalculate StudentSemesterGPA for any affected past semesters
     for (const [pastSemId, regNos] of affectedPastRecords.entries()) {
-      const pastUpload = await ResultUpload.findOne({ semesterId: pastSemId, isPublished: true }).session(session);
+      const pastUpload = await ResultUpload.findOne({ semesterId: pastSemId, isPublished: true });
       if (!pastUpload) continue;
       for (const regNo of regNos) {
         const rows = await StudentResult.find({
@@ -336,12 +343,12 @@ async function publishResults(req, res) {
           semesterId: pastSemId,
           isLatestAttempt: true,
           resultUploadId: pastUpload._id
-        }).session(session);
+        });
         const { semesterGPA, totalCredits } = calculateSemesterGPA(rows);
         await StudentSemesterGPA.findOneAndUpdate(
           { registrationNo: regNo, semesterId: pastSemId },
           { semesterGPA, totalCredits, calculatedAt: new Date() },
-          { upsert: true, new: true, session }
+          { upsert: true, new: true }
         );
       }
     }
@@ -351,18 +358,14 @@ async function publishResults(req, res) {
     for (const regNos of affectedPastRecords.values()) {
       regNos.forEach(r => allAffectedStudents.add(r));
     }
-    await _recalcCGPAForStudents([...allAffectedStudents], session);
+    await _recalcCGPAForStudents([...allAffectedStudents]);
 
-    await session.commitTransaction();
     res.json({ message: "Results published successfully", uploadId: upload._id });
   } catch (err) {
-    await session.abortTransaction();
     try {
       if (semesterLocked) await Semester.findByIdAndUpdate(req.params.uploadId && (await ResultUpload.findById(req.params.uploadId))?.semesterId, { isLocked: false });
     } catch (_) { /* ignore rollback errors */ }
-    res.status(500).json({ message: `Publish failed and was rolled back: ${err.message}` });
-  } finally {
-    session.endSession();
+    res.status(500).json({ message: `Publish failed: ${err.message}` });
   }
 }
 
@@ -487,7 +490,7 @@ async function getHistory(req, res) {
       isPublished: u.isPublished,
       uploadedAt: u.uploadedAt,
       uploadedBy: u.uploadedBy,
-      downloadUrl: `${process.env.CLIENT_URL || "http://localhost:5000"}/${u.filePath}`,
+      downloadUrl: `http://localhost:${process.env.PORT || 5000}/${u.filePath}`,
     }));
 
     res.json({ history });
