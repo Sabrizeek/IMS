@@ -17,6 +17,7 @@ async function createAcademicYear(req, res) {
   try {
     const { year } = req.body;
     if (!year) return res.status(400).json({ message: "year is required" });
+    if (!/^\d{4}\/\d{4}$/.test(year)) return res.status(400).json({ message: "Invalid year format. Expected YYYY/YYYY" });
     const existing = await AcademicYear.findOne({ year });
     if (existing) return res.status(409).json({ message: "Academic year already exists" });
     const doc = await AcademicYear.create({ year });

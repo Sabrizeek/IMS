@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Camera, Info, User as UserIcon } from "lucide-react";
 import { Footer } from "@/components/layout/Footer";
+import { StudentNav } from "@/components/layout/StudentNav";
 import { Field, Input, Label, Select } from "@/components/ui/Field";
 import { Button } from "@/components/ui/Button";
 import { useAuth } from "@/context/AuthContext";
@@ -92,6 +93,7 @@ export default function ProfileEditPage() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <StudentNav />
       <main className="flex-1 bg-sky p-6">
         <div className="mx-auto max-w-3xl py-10">
           <button

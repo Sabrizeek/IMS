@@ -25,7 +25,7 @@ const cards = [
     badge: "Active Repository",
     badgeLabel: null,
     metric: "0",
-    subtitle: "Total Active Students",
+    subtitle: "Total Registered Students",
     button: "Manage Student Details",
     href: "/department/student-details",
     className: "bg-[#182335] text-white",

@@ -171,19 +171,22 @@ export default function DepartmentVerificationPage() {
           <div className="mt-8 overflow-hidden rounded-3xl border border-slate-200 bg-slate-50 shadow-sm">
             <div className="flex flex-col gap-3 border-b border-slate-200 bg-white p-5 sm:flex-row sm:items-center sm:justify-between">
               <div className="inline-flex flex-nowrap items-center gap-1.5 rounded-[20px] bg-slate-100/80 p-1.5 border border-slate-200 shadow-inner overflow-x-auto">
-                {(["all", "pending", "approved", "rejected"] as const).map((status) => (
+                {(["all", "pending", "approved", "rejected"] as const).map((status) => {
+                  const count = status === "all" ? requests.length : requests.filter(r => r.status === status).length;
+                  return (
                   <button
                     key={status}
                     onClick={() => setActiveFilter(status)}
-                    className={`rounded-xl px-5 py-2.5 text-xs font-bold transition-all duration-200 capitalize ${
+                    className={`flex items-center gap-2 rounded-xl px-5 py-2.5 text-xs font-bold transition-all duration-200 capitalize ${
                       activeFilter === status
                         ? "bg-navy-deep text-white shadow-md"
                         : "text-slate-600 hover:bg-slate-200/50 hover:text-slate-900"
                     }`}
                   >
                     {status}
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] leading-none ${activeFilter === status ? "bg-white/20 text-white" : "bg-slate-200 text-slate-500"}`}>{count}</span>
                   </button>
-                ))}
+                )})}
               </div>
               <div className="relative w-full sm:max-w-xs">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">

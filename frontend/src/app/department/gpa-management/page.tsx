@@ -134,6 +134,7 @@ export default function GpaManagementPage() {
   // ─── Academic Year CRUD ─────────────────────────────────────────────────────
   async function createYear() {
     if (!newYear.trim()) { showToast("Please enter a year", false); return; }
+    if (!/^\d{4}\/\d{4}$/.test(newYear.trim())) { showToast("Invalid format. Use YYYY/YYYY (e.g., 2024/2025)", false); return; }
     const res = await fetch(`${API}/academic-years`, {
       method: "POST", headers: authHeaders(), body: JSON.stringify({ year: newYear.trim() }),
     });
@@ -146,6 +147,7 @@ export default function GpaManagementPage() {
 
   async function updateYear(id: string) {
     if (!editYearVal.trim()) { showToast("Year cannot be empty", false); return; }
+    if (!/^\d{4}\/\d{4}$/.test(editYearVal.trim())) { showToast("Invalid format. Use YYYY/YYYY (e.g., 2024/2025)", false); return; }
     const res = await fetch(`${API}/academic-years/${id}`, {
       method: "PUT", headers: authHeaders(), body: JSON.stringify({ year: editYearVal.trim() }),
     });
@@ -170,6 +172,7 @@ export default function GpaManagementPage() {
   async function createSemester() {
     if (!selectedYearId) { showToast("Select a year first", false); return; }
     if (!newSem.number) { showToast("Semester number is required", false); return; }
+    if (!newSem.label.trim() || newSem.label.trim().length < 3) { showToast("Semester label must be at least 3 characters", false); return; }
     const res = await fetch(`${API}/semesters`, {
       method: "POST", headers: authHeaders(),
       body: JSON.stringify({ academicYearId: selectedYearId, semesterNumber: Number(newSem.number), label: newSem.label.trim() }),
@@ -182,7 +185,7 @@ export default function GpaManagementPage() {
   }
 
   async function updateSemester(id: string) {
-    if (!editSemVal.trim()) { showToast("Label cannot be empty", false); return; }
+    if (!editSemVal.trim() || editSemVal.trim().length < 3) { showToast("Semester label must be at least 3 characters", false); return; }
     const res = await fetch(`${API}/semesters/${id}`, {
       method: "PUT", headers: authHeaders(), body: JSON.stringify({ label: editSemVal.trim() }),
     });
@@ -378,7 +381,7 @@ export default function GpaManagementPage() {
           
           {/* TOAST */}
           {toast && (
-            <div className={`fixed top-8 left-1/2 -translate-x-1/2 z-50 rounded-full px-6 py-3 font-semibold text-white shadow-xl transition flex items-center gap-3 animate-in slide-in-from-top-4 ${toast.ok ? "bg-emerald-600" : "bg-rose-600"}`}>
+            <div className={`fixed top-8 left-1/2 -translate-x-1/2 z-[60] rounded-full px-6 py-3 font-semibold text-white shadow-xl transition flex items-center gap-3 animate-in slide-in-from-top-4 ${toast.ok ? "bg-emerald-600" : "bg-rose-600"}`}>
               {toast.ok ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
               {toast.msg}
             </div>

@@ -79,7 +79,7 @@ async function getStudentById(req, res) {
 async function getDashboardStats(req, res) {
   try {
     const registrationRequestsCount = await AccountRequest.countDocuments({ status: "pending" });
-    const activeStudentsCount = await StudentProfile.countDocuments({ specializationConfirmed: true });
+    const activeStudentsCount = await require("../models/User").countDocuments({ role: "student" });
     const pendingApprovalsCount = await InternshipApplication.countDocuments({ approved: false, state: "selected" });
 
     const { specialization, gpa, internType } = req.query;

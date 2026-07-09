@@ -62,10 +62,13 @@ async function deleteGpaSubject(req, res) {
     if (doc.semesterId && doc.semesterId.isLocked)
       return res.status(423).json({ message: "Parent semester is locked — cannot delete subject" });
 
-    // Guard: cannot delete if results already reference this subject code
-    const resultCount = await StudentResult.countDocuments({ subjectCode: doc.subjectCode.toUpperCase() });
+    // Guard: cannot delete if results in this specific semester already reference this subject code
+    const resultCount = await StudentResult.countDocuments({ 
+      subjectCode: doc.subjectCode.toUpperCase(),
+      semesterId: doc.semesterId
+    });
     if (resultCount > 0)
-      return res.status(409).json({ message: `Cannot delete: ${resultCount} student result(s) reference subject code ${doc.subjectCode}` });
+      return res.status(409).json({ message: `Cannot delete: ${resultCount} student result(s) in this semester reference subject code ${doc.subjectCode}` });
 
     await GpaSubject.deleteOne({ _id: doc._id });
     res.json({ message: "Subject deleted" });
