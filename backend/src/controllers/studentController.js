@@ -37,6 +37,7 @@ async function listStudents(_req, res) {
           gpa: cgpaDoc ? cgpaDoc.cgpa : 0,
           totalCredits: 0,
           internshipStatus: status,
+          duration: placement?.duration || "",
           linkedin: profile?.linkedin || "",
           github: profile?.github || "",
           projects: profile?.projects || [],

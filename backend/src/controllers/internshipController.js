@@ -22,6 +22,7 @@ async function createMine(req, res) {
       companyName: req.body.state === "notSelected" ? "" : req.body.companyName,
       jobPosition: req.body.state === "notSelected" ? "" : req.body.jobPosition,
       internshipStartDate: req.body.state === "notSelected" ? undefined : req.body.internshipStartDate,
+      duration: req.body.state === "notSelected" ? "" : req.body.duration,
       offerFileName: req.body.state === "notSelected" ? "" : req.body.offerFileName,
       offerMimeType: req.body.state === "notSelected" ? "" : req.body.offerMimeType,
       offerDataUrl: req.body.state === "notSelected" ? "" : req.body.offerDataUrl,
@@ -54,6 +55,7 @@ async function updateMine(req, res) {
       updateData.companyName = "";
       updateData.jobPosition = "";
       updateData.internshipStartDate = undefined;
+      updateData.duration = "";
       updateData.offerFileName = "";
       updateData.offerMimeType = "";
       updateData.offerDataUrl = "";
@@ -108,8 +110,9 @@ async function listAll(_req, res) {
       status: app.approved ? "Approved" : app.rejectionReason ? "Rejected" : "Pending Review",
       offerFileName: app.offerFileName || "",
       offerMimeType: app.offerMimeType || "",
+      internshipStartDate: app.internshipStartDate ? app.internshipStartDate.toISOString() : "",
+      duration: app.duration || "",
       offerDataUrl: app.offerDataUrl || "",
-      internshipStartDate: app.internshipStartDate ? new Date(app.internshipStartDate).toLocaleDateString() : "",
       rejectionReason: app.rejectionReason || "",
     }));
 

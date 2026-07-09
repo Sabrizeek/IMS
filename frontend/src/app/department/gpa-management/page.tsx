@@ -64,7 +64,7 @@ export default function GpaManagementPage() {
   const [uploadWarnings, setUploadWarnings] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [archiving, setArchiving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
 
@@ -337,15 +337,15 @@ export default function GpaManagementPage() {
     }
   }
 
-  // ─── Archive ────────────────────────────────────────────────────────────────
-  async function handleArchive(uploadId: string) {
-    if (!confirm("Archive these results? The semester will be unlocked and semester GPAs removed.")) return;
-    setArchiving(true);
-    const res = await fetch(`${API}/results/archive/${uploadId}`, { method: "POST", headers: authHeaders() });
+  // ─── Delete ────────────────────────────────────────────────────────────────
+  async function handleDelete(uploadId: string) {
+    if (!confirm("Delete these results? The semester will be unlocked and semester GPAs removed.")) return;
+    setDeleting(true);
+    const res = await fetch(`${API}/results/delete/${uploadId}`, { method: "DELETE", headers: authHeaders() });
     const data = await res.json();
-    setArchiving(false);
+    setDeleting(false);
     if (!res.ok) { showToast(data.message, false); return; }
-    showToast("Results archived successfully");
+    showToast("Results deleted successfully");
     if (selectedSemester) {
       await fetchHistory(selectedSemester._id);
       await fetchSemesters(selectedYearId);
@@ -668,10 +668,10 @@ export default function GpaManagementPage() {
                       </button>
                     ) : (
                       <div className="space-y-3">
-                        <button onClick={() => handleArchive(activeUpload._id)} disabled={archiving} className="w-full flex items-center justify-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600 hover:bg-rose-100 transition disabled:opacity-50">
-                          <Archive className="h-4 w-4" /> {archiving ? "Archiving..." : "Archive Results"}
+                        <button onClick={() => handleDelete(activeUpload._id)} disabled={deleting} className="w-full flex items-center justify-center gap-2 rounded-xl bg-rose-50 px-4 py-3 text-sm font-bold text-rose-600 hover:bg-rose-100 transition disabled:opacity-50">
+                          <Trash2 className="h-4 w-4" /> {deleting ? "Deleting..." : "Delete Results"}
                         </button>
-                        <p className="text-[10px] text-center text-slate-400 px-4">Archiving unlocks the semester and recalculates all affected student CGPAs.</p>
+                        <p className="text-[10px] text-center text-slate-400 px-4">Deleting unlocks the semester and recalculates all affected student CGPAs.</p>
                       </div>
                     )}
                   </div>
@@ -756,29 +756,23 @@ export default function GpaManagementPage() {
             </div>
             <div className="p-6">
               {/* Add form */}
-              {!selectedYear.isLocked ? (
-                <div className="flex gap-2 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                  <input
-                    className="w-16 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none text-center focus:border-[#1d4473]"
-                    placeholder="#"
-                    type="number"
-                    min={1}
-                    value={newSem.number}
-                    onChange={e => setNewSem(s => ({ ...s, number: e.target.value }))}
-                  />
-                  <input
-                    className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#1d4473]"
-                    placeholder="Label (e.g. Semester 1)"
-                    value={newSem.label}
-                    onChange={e => setNewSem(s => ({ ...s, label: e.target.value }))}
-                  />
-                  <button onClick={createSemester} className="rounded-lg bg-[#1d4473] px-4 py-2 text-white font-bold hover:bg-[#163a60] transition">Add</button>
-                </div>
-              ) : (
-                <div className="mb-6 rounded-xl bg-amber-50 px-4 py-3 text-amber-700 text-sm font-medium flex items-center gap-2 border border-amber-200">
-                  <Lock className="h-4 w-4" /> Cannot add semesters (Academic Year is locked).
-                </div>
-              )}
+              <div className="flex gap-2 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+                <input
+                  className="w-16 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none text-center focus:border-[#1d4473]"
+                  placeholder="#"
+                  type="number"
+                  min={1}
+                  value={newSem.number}
+                  onChange={e => setNewSem(s => ({ ...s, number: e.target.value }))}
+                />
+                <input
+                  className="flex-1 rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-[#1d4473]"
+                  placeholder="Label (e.g. Semester 1)"
+                  value={newSem.label}
+                  onChange={e => setNewSem(s => ({ ...s, label: e.target.value }))}
+                />
+                <button onClick={createSemester} className="rounded-lg bg-[#1d4473] px-4 py-2 text-white font-bold hover:bg-[#163a60] transition">Add</button>
+              </div>
 
               {/* List */}
               <div className="space-y-2 max-h-[40vh] overflow-y-auto pr-1">

@@ -5,7 +5,7 @@ const {
   getTemplate,
   uploadResults,
   publishResults,
-  archiveResults,
+  deleteResults,
   getHistory,
   getMyAcademicPerformance,
   getUploadData,
@@ -24,7 +24,7 @@ const studentGuard = [protect, authorizeRoles("student")];
 router.get("/template",            deptGuard, getTemplate);
 router.post("/upload",             deptGuard, upload.single("file"), uploadResults);
 router.post("/publish/:uploadId",  deptGuard, publishResults);
-router.post("/archive/:uploadId",  deptGuard, archiveResults);
+router.delete("/delete/:uploadId", deptGuard, deleteResults);
 router.get("/history",             deptGuard, getHistory);
 router.get("/upload/:uploadId/data", deptGuard, getUploadData);
 

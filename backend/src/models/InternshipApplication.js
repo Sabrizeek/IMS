@@ -7,6 +7,7 @@ const internshipApplicationSchema = new mongoose.Schema(
     companyName: { type: String, trim: true },
     jobPosition: { type: String, trim: true },
     internshipStartDate: { type: Date },
+    duration: { type: String, trim: true },
     offerFileName: { type: String, trim: true },
     offerMimeType: { type: String, trim: true },
     offerDataUrl: { type: String }, // Store base64 Data URL or file upload path

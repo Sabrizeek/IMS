@@ -40,6 +40,7 @@ export default function InternshipStatusPage() {
   const [companyName, setCompanyName] = useState("");
   const [jobPosition, setJobPosition] = useState("");
   const [internshipStartDate, setInternshipStartDate] = useState("");
+  const [duration, setDuration] = useState("");
   const [offerFileName, setOfferFileName] = useState("");
   const [offerMimeType, setOfferMimeType] = useState("");
   const [offerDataUrl, setOfferDataUrl] = useState("");
@@ -66,6 +67,7 @@ export default function InternshipStatusPage() {
           setCompanyName(app.companyName || "");
           setJobPosition(app.jobPosition || "");
           setInternshipStartDate(app.internshipStartDate ? app.internshipStartDate.split("T")[0] : "");
+          setDuration(app.duration || "");
           setOfferFileName(app.offerFileName || "");
           setOfferMimeType(app.offerMimeType || "");
           setOfferDataUrl(app.offerDataUrl || "");
@@ -104,6 +106,7 @@ export default function InternshipStatusPage() {
     setCompanyName("");
     setJobPosition("");
     setInternshipStartDate("");
+    setDuration("");
     setOfferFileName("");
     setOfferMimeType("");
     setOfferDataUrl("");
@@ -142,8 +145,8 @@ export default function InternshipStatusPage() {
 
   const submitApplication = async () => {
     if (isFormLocked) return;
-    if (!companyName.trim() || !jobPosition.trim() || !internshipStartDate || !offerDataUrl) {
-      setValidationError("Fill all required fields, including the start date, and upload the offer letter before submitting.");
+    if (!companyName.trim() || !jobPosition.trim() || !internshipStartDate || !duration.trim() || !offerDataUrl) {
+      setValidationError("Fill all required fields, including the start date and duration, and upload the offer letter before submitting.");
       return;
     }
 
@@ -160,6 +163,7 @@ export default function InternshipStatusPage() {
           companyName: companyName.trim(),
           jobPosition: jobPosition.trim(),
           internshipStartDate,
+          duration: duration.trim(),
           offerFileName,
           offerMimeType,
           offerDataUrl,
@@ -223,6 +227,7 @@ export default function InternshipStatusPage() {
     companyName.trim().length > 0 &&
     jobPosition.trim().length > 0 &&
     internshipStartDate.length > 0 &&
+    duration.trim().length > 0 &&
     offerDataUrl.length > 0;
 
   if (!ready || !user) {
@@ -326,8 +331,8 @@ export default function InternshipStatusPage() {
                         </label>
                       </div>
 
-                      {/* Internship Start Date Section */}
-                      <div className="block">
+                      {/* Internship Start Date & Duration Section */}
+                      <div className="grid gap-6 sm:grid-cols-2">
                         <label className="block">
                           <span className={`text-xs font-bold ${isFormLocked ? "text-[#0f2d59]/60" : "text-[#0f2d59]"}`}>Internship Start Date <span className="text-rose-500">*</span></span>
                           <input
@@ -335,7 +340,17 @@ export default function InternshipStatusPage() {
                             disabled={isFormLocked}
                             value={internshipStartDate}
                             onChange={(event) => setInternshipStartDate(event.target.value)}
-                            className="mt-2 w-full sm:w-1/2 block rounded border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+                            className="mt-2 w-full block rounded border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+                          />
+                        </label>
+                        <label className="block">
+                          <span className={`text-xs font-bold ${isFormLocked ? "text-[#0f2d59]/60" : "text-[#0f2d59]"}`}>Duration (e.g., 6 Months) <span className="text-rose-500">*</span></span>
+                          <input
+                            disabled={isFormLocked}
+                            value={duration}
+                            onChange={(event) => setDuration(event.target.value)}
+                            className="mt-2 w-full block rounded border border-gray-300 bg-white px-4 py-2.5 text-sm text-gray-800 outline-none placeholder:text-gray-400 disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-400"
+                            placeholder="e.g., 6 Months"
                           />
                         </label>
                       </div>

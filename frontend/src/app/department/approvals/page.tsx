@@ -22,6 +22,7 @@ interface PlacementRequest {
   offerMimeType: string;
   offerDataUrl: string;
   internshipStartDate: string;
+  duration?: string;
   rejectionReason: string;
 }
 
@@ -353,6 +354,7 @@ export default function DepartmentApprovalsPage() {
                     <th className="px-6 py-4">Student & ID</th>
                     <th className="px-6 py-4">Company</th>
                     <th className="px-6 py-4">Job Position</th>
+                    <th className="px-6 py-4">Duration</th>
                     <th className="px-6 py-4">Date Submitted</th>
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4 text-right">Actions</th>
@@ -361,7 +363,7 @@ export default function DepartmentApprovalsPage() {
                 <tbody className="divide-y divide-slate-200">
                   {filteredPlacements.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-slate-500 italic">No placement requests in this filter criteria.</td>
+                      <td colSpan={7} className="px-6 py-8 text-center text-slate-500 italic">No placement requests in this filter criteria.</td>
                     </tr>
                   ) : (
                     filteredPlacements.map((row) => (
@@ -383,6 +385,7 @@ export default function DepartmentApprovalsPage() {
                         </td>
                         <td className="px-6 py-4 font-medium text-slate-700">{row.company}</td>
                         <td className="px-6 py-4 font-medium text-slate-700">{row.role}</td>
+                        <td className="px-6 py-4 font-medium text-slate-700">{row.duration || "N/A"}</td>
                         <td className="px-6 py-4 text-slate-500">{row.date}</td>
                         <td className="px-6 py-4">
                           <span className={`inline-flex items-center justify-center rounded-full px-2.5 py-1 text-[10px] font-bold ${

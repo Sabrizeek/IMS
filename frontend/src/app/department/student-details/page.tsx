@@ -29,6 +29,7 @@ interface StudentData {
   gpa: number;
   totalCredits: number;
   internshipStatus: string;
+  duration?: string;
   linkedin: string;
   github: string;
   projects: Array<{
@@ -118,10 +119,10 @@ export default function DepartmentStudentDetailsPage() {
   }, [students, selectedSpecialization, selectedStatus, selectedGpaOrder, searchQuery]);
 
   const handleDownloadStudents = () => {
-    const headers = ["Name", "Student ID", "Email", "GPA", "Specialization", "Internship Status"];
+    const headers = ["Name", "Student ID", "Email", "GPA", "Specialization", "Internship Status", "Duration"];
     let csv = headers.join(",") + "\n";
     filteredStudents.forEach((student) => {
-      csv += `"${student.name}","${student.id}","${student.email}","${student.gpa.toFixed(2)}","${student.specialization || ''}","${student.internshipStatus || ''}"\n`;
+      csv += `"${student.name}","${student.id}","${student.email}","${student.gpa.toFixed(2)}","${student.specialization || ''}","${student.internshipStatus || ''}","${student.duration || ''}"\n`;
     });
     
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -346,6 +347,7 @@ export default function DepartmentStudentDetailsPage() {
                     <th className="px-6 py-4.5">GPA</th>
                     <th className="px-6 py-4.5">Specialization</th>
                     <th className="px-6 py-4.5">Internship Status</th>
+                    <th className="px-6 py-4.5">Duration</th>
                     <th className="px-6 py-4.5">Actions</th>
                   </tr>
                 </thead>
@@ -390,6 +392,7 @@ export default function DepartmentStudentDetailsPage() {
                             {student.internshipStatus}
                           </span>
                         </td>
+                        <td className="px-6 py-5 font-bold text-[#0f2a4a] text-sm">{student.duration || "N/A"}</td>
                         <td className="px-6 py-5 space-x-2 whitespace-nowrap">
                           <button
                             type="button"

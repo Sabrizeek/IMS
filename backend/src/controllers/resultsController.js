@@ -373,17 +373,12 @@ async function publishResults(req, res) {
 // POST /api/results/archive/:uploadId
 // Unpublishes results, unlocks semester, recalculates CGPA & restores old repeats
 // ─────────────────────────────────────────────────────────────────────────────
-async function archiveResults(req, res) {
+async function deleteResults(req, res) {
   try {
     const upload = await ResultUpload.findById(req.params.uploadId);
     if (!upload) return res.status(404).json({ message: "Upload not found" });
-    if (!upload.isPublished) return res.status(409).json({ message: "Upload is not published — nothing to archive" });
 
-    // 1. Mark upload unpublished
-    upload.isPublished = false;
-    await upload.save();
-
-    // 2. Delete StudentSemesterGPA records for this semester
+    // 1. Delete StudentSemesterGPA records for this semester
     await StudentSemesterGPA.deleteMany({ semesterId: upload.semesterId });
 
     // 3. Unlock semester if no other published uploads remain for it
@@ -410,9 +405,8 @@ async function archiveResults(req, res) {
 
     for (const row of uploadResults) {
       allAffectedRegNos.add(row.registrationNo);
-      // Deprecate the archived record
-      row.isLatestAttempt = false;
-      await row.save();
+      // Delete the record
+      await StudentResult.deleteOne({ _id: row._id });
 
       // Find all other attempts for this student + subject
       const allOtherAttempts = await StudentResult.find({
@@ -460,10 +454,13 @@ async function archiveResults(req, res) {
       }
     }
 
-    // 6. Recalculate CGPA for all affected students
+    // 6. Delete the ResultUpload document
+    await ResultUpload.deleteOne({ _id: upload._id });
+
+    // 7. Recalculate CGPA for all affected students
     await _recalcCGPAForStudents([...allAffectedRegNos], null);
 
-    res.json({ message: "Upload archived. Semester GPA records removed. CGPA recalculated.", archivedUploadId: upload._id });
+    res.json({ message: "Upload deleted permanently. Semester GPA records removed. CGPA recalculated.", deletedUploadId: upload._id });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }
@@ -624,7 +621,7 @@ module.exports = {
   getTemplate,
   uploadResults,
   publishResults,
-  archiveResults,
+  deleteResults,
   getHistory,
   getMyAcademicPerformance,
   getUploadData,

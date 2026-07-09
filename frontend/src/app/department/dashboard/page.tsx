@@ -143,6 +143,10 @@ export default function DepartmentDashboard() {
     );
   }
 
+  const maxPlacementCount = stats.companyPlacements.length > 0 
+    ? Math.max(...stats.companyPlacements.map(c => c.count)) 
+    : 0;
+
   return (
     // Light background from system UI preview sheets
     <div className="min-h-screen bg-[#d9effc] flex flex-col font-sans antialiased">
@@ -263,16 +267,6 @@ export default function DepartmentDashboard() {
                 <option value="Business Analyst Intern">Business Analyst</option>
               </select>
 
-              <select
-                value={analyticsFilter}
-                onChange={(e) => setAnalyticsFilter(e.target.value)}
-                className="bg-[#1e293b]/60 border border-slate-700 text-slate-200 text-xs font-semibold py-2.5 px-4 rounded-lg focus:outline-none focus:ring-1 focus:ring-slate-500 cursor-pointer shadow-sm"
-              >
-                <option value="">All Specializations</option>
-                <option value="Computer Science">Computer Science</option>
-                <option value="Software Engineering">Software Engineering</option>
-                <option value="Information Systems">Information Systems</option>
-              </select>
               <button 
                 onClick={handleDownloadAnalytics}
                 className="bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-bold py-2.5 px-6 rounded-lg transition-colors border border-slate-700 shadow-sm ml-2"
@@ -283,10 +277,23 @@ export default function DepartmentDashboard() {
           </div>
           
           <div className="bg-[#1e293b]/60 rounded-[24px] p-8 mt-2">
-            <div className="flex items-end justify-around h-64 border-b border-slate-700/50 pb-4">
-              {stats.companyPlacements.length > 0 ? (
-                stats.companyPlacements.map((company, index) => {
-                  const maxCount = Math.max(...stats.companyPlacements.map(c => c.count), 1);
+            <div className="flex h-64 pb-4">
+              {/* Y Axis */}
+              {stats.companyPlacements.length > 0 && (
+                <div className="flex flex-col justify-between items-end h-full border-r border-slate-700/50 pr-4 mr-4 text-[10px] font-bold text-slate-500 min-w-[40px]">
+                  <span>{maxPlacementCount}</span>
+                  <span>{Math.round(maxPlacementCount * 0.75)}</span>
+                  <span>{Math.round(maxPlacementCount * 0.5)}</span>
+                  <span>{Math.round(maxPlacementCount * 0.25)}</span>
+                  <span>0</span>
+                </div>
+              )}
+
+              {/* Chart Bars */}
+              <div className="flex-1 flex items-end justify-around h-full border-b border-slate-700/50 relative">
+                {stats.companyPlacements.length > 0 ? (
+                  stats.companyPlacements.map((company, index) => {
+                    const maxCount = Math.max(maxPlacementCount, 1);
                   return (
                     <div 
                       key={company.name} 
@@ -313,8 +320,9 @@ export default function DepartmentDashboard() {
                 </div>
               )}
             </div>
-            <div className="h-6"></div>
           </div>
+          <div className="h-6"></div>
+        </div>
         </section>
 
         {/* Split Hero Banner Section */}
@@ -322,30 +330,39 @@ export default function DepartmentDashboard() {
           <div className="grid gap-0 lg:grid-cols-2 min-h-[340px]">
             
             {/* Left Box Side Content block */}
-            <div className="p-10 lg:p-14 flex flex-col justify-center bg-[#13233c]">
-              <p className="text-xs font-bold uppercase tracking-[0.28em] text-sky-400">
-                Empowering the Future of Career Excellence
-              </p>
-              <h2 className="mt-4 text-3xl font-extrabold leading-tight text-white">
-                Empowering the Future of Career Excellence
-              </h2>
-              <p className="mt-4 text-xs leading-6 text-slate-300 max-w-md">
-                The Department of Computer Science is dedicated to connecting students with industry leaders to foster innovation and practical skill development through strategic internship placements.
-              </p>
+            <div className="p-10 lg:p-14 flex flex-col justify-center bg-[#13233c] relative overflow-hidden">
+              <div className="absolute -top-24 -left-24 w-64 h-64 bg-sky-500/10 rounded-full blur-3xl pointer-events-none"></div>
+              <div className="relative z-10">
+                <p className="text-xs font-bold uppercase tracking-[0.28em] text-sky-400">
+                  Career Excellence
+                </p>
+                <h2 className="mt-4 text-3xl font-extrabold leading-tight text-white">
+                  Empowering the Future of Tech Professionals
+                </h2>
+                <p className="mt-4 text-xs leading-6 text-slate-300 max-w-md">
+                  The Department of Computer Science is dedicated to connecting students with industry leaders to foster innovation and practical skill development through strategic internship placements.
+                </p>
+              </div>
             </div>
             
-            {/* Right Box Side Media Frame wrapper */}
-            <div 
-              className="relative bg-cover bg-center min-h-[260px] lg:min-h-full flex items-center p-10 lg:p-14" 
-              style={{ backgroundImage: "url('/department.jpg')" }}
-            >
-              {/* Overlay shading layout directly referencing design tokens */}
-              <div className="absolute inset-0 bg-[#0b1b33]/75 mix-blend-multiply" />
+            {/* Right Box Side Content block */}
+            <div className="p-10 lg:p-14 flex flex-col justify-center bg-gradient-to-br from-[#0b1b33] to-[#1e3a8a] relative overflow-hidden border-l border-white/5">
+              {/* Decorative Background Elements */}
+              <div className="absolute inset-0 opacity-50 pointer-events-none" style={{ backgroundImage: "url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCI+PHBhdGggZD0iTTAgMGg0MHY0MEgweiIgZmlsbD0ibm9uZSIvPjxjaXJjbGUgY3g9IjIwIiBjeT0iMjAiIHI9IjEiIGZpbGw9InJnYmEoMjU1LCAyNTUsIDI1NSwgMC4yKSIvPjwvc3ZnPg==')" }}></div>
+              <div className="absolute -bottom-32 -right-32 w-80 h-80 bg-sky-400/20 rounded-full blur-3xl pointer-events-none"></div>
               
-              <div className="relative z-10 max-w-sm">
+              <div className="relative z-10">
                 <h2 className="text-3xl font-black leading-snug text-white tracking-wide drop-shadow-md">
                   University Internship Management System
                 </h2>
+                <p className="mt-4 text-sky-100/80 text-sm leading-relaxed max-w-md">
+                  A centralized platform streamlining the coordination between academia and industry. Efficiently manage requests, track student progress, and facilitate successful career launches.
+                </p>
+                <div className="mt-8 flex gap-3">
+                  <div className="h-1.5 w-12 bg-sky-400 rounded-full"></div>
+                  <div className="h-1.5 w-4 bg-sky-400/20 rounded-full"></div>
+                  <div className="h-1.5 w-4 bg-sky-400/20 rounded-full"></div>
+                </div>
               </div>
             </div>
 

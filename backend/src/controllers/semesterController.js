@@ -25,7 +25,6 @@ async function createSemester(req, res) {
 
     const year = await AcademicYear.findById(academicYearId);
     if (!year) return res.status(404).json({ message: "Academic year not found" });
-    if (year.isLocked) return res.status(423).json({ message: "Parent academic year is locked" });
 
     const doc = await Semester.create({ academicYearId, semesterNumber, label });
     res.status(201).json({ semester: doc });
