@@ -112,6 +112,7 @@ async function uploadResults(req, res) {
     let studentNoCol = -1;
     let nameCol = -1;
     const subjectColIndices = new Map(); // colIndex → subjectCode
+    const headerErrors = [];
 
     sheet.eachRow((row, rowNumber) => {
       if (headerRowIndex !== -1) return;
@@ -128,19 +129,37 @@ async function uploadResults(req, res) {
         nameCol = 1;
       }
 
-      if (headerRowIndex !== -1) {
+      if (headerRowIndex !== -1 && headerErrors.length === 0) {
         // Step 2: Walk columns to find subject code columns, skip empty/space placeholders
+        const foundSubjects = new Set();
         row.eachCell({ includeEmpty: true }, (cell, colNum) => {
+          if (colNum === studentNoCol || colNum === nameCol) return;
           const val = String(cell.value || "").trim().toUpperCase();
+          if (!val) return; // ignore empty headers
+
           if (subjectMap.has(val)) {
             subjectColIndices.set(colNum, val);
+            foundSubjects.add(val);
+          } else {
+            headerErrors.push(`Unexpected column "${val}" found. Please remove it or use the latest template.`);
           }
         });
+
+        // Check for missing subjects
+        for (const code of subjectMap.keys()) {
+          if (!foundSubjects.has(code)) {
+            headerErrors.push(`Missing required subject column "${code}". Please use the latest template.`);
+          }
+        }
       }
     });
 
     if (headerRowIndex === -1)
       return res.status(422).json({ errors: [{ row: null, message: 'Header row not found. Expected row with "STUDENT NO" and "NAME" in the first two columns.' }] });
+
+    if (headerErrors.length > 0) {
+      return res.status(422).json({ errors: headerErrors.map(msg => ({ row: headerRowIndex, message: msg })) });
+    }
 
     // ── Validation pass ───────────────────────────────────────────────────────
     const errors = [];
