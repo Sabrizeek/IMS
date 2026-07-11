@@ -4,11 +4,8 @@ const {
   listMyRecords,
   createRecord,
   updateRecord,
-  requestUnlock,
   listStudentRecords,
-  unlockRecord,
-  generatePdfReport,
-} = require("../controllers/weeklyRecordController");
+} = require("../controllers/monthlyRecordController");
 
 const multer = require("multer");
 const path = require("path");

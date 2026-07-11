@@ -26,18 +26,17 @@ interface PlacementRequest {
   rejectionReason: string;
 }
 
-interface WeeklyRecordData {
-  _id: string;
-  weekNumber: number;
-  weekStart: string;
-  weekEnd: string;
-  activities: string;
-  challengesEncountered: string;
-  reflections: string;
-  skillsGained: string[];
-  status: "Draft" | "Edited" | "Submitted";
-  unlockRequested: boolean;
-  isLocked: boolean;
+interface LogRecordData {
+  _id?: string;
+  weekNumber?: number;
+  monthNumber?: number;
+  weekStart?: string;
+  weekEnd?: string;
+  monthStart?: string;
+  monthEnd?: string;
+  isLateSubmission?: boolean;
+  status?: "Pending" | "Submitted" | "Missing";
+  submittedAt?: string;
 }
 
 export default function DepartmentApprovalsPage() {
@@ -49,8 +48,9 @@ export default function DepartmentApprovalsPage() {
   const [loading, setLoading] = useState(true);
   const [activeRequest, setActiveRequest] = useState<PlacementRequest | null>(null);
   const [isRecordBookOpen, setIsRecordBookOpen] = useState(false);
-  const [studentWeeks, setStudentWeeks] = useState<WeeklyRecordData[]>([]);
-  const [expandedWeek, setExpandedWeek] = useState<number | null>(null);
+  const [studentWeeks, setStudentWeeks] = useState<LogRecordData[]>([]);
+  const [studentMonths, setStudentMonths] = useState<LogRecordData[]>([]);
+  const [recordBookTab, setRecordBookTab] = useState<"weekly" | "monthly">("weekly");
   const [actionMessage, setActionMessage] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -126,19 +126,29 @@ export default function DepartmentApprovalsPage() {
     router.push(`/department/approvals/${request._id}`);
   };
 
+  const closeOverlay = () => {
+    setIsRecordBookOpen(false);
+    setActiveRequest(null);
+  };
+
   const openRecordBook = async (request: PlacementRequest) => {
     setActiveRequest(request);
     setActionMessage(null);
+    setRecordBookTab("weekly");
 
-    // Fetch real weekly records of the student
     try {
       const token = sessionStorage.getItem("ims.department.token");
-      const res = await fetch(`http://localhost:5000/api/weekly-records/student/${request.studentUserId}`, {
+      const wRes = await fetch(`http://localhost:5000/api/weekly-records/student/${request.studentUserId}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) {
-        const data = await res.json();
-        setStudentWeeks(data.records || []);
+      const mRes = await fetch(`http://localhost:5000/api/monthly-records/student/${request.studentUserId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (wRes.ok && mRes.ok) {
+        const wData = await wRes.json();
+        const mData = await mRes.json();
+        setStudentWeeks(wData.records || []);
+        setStudentMonths(mData.records || []);
         setIsRecordBookOpen(true);
       } else {
         alert("Failed to access student's record book.");
@@ -148,43 +158,7 @@ export default function DepartmentApprovalsPage() {
     }
   };
 
-  const closeOverlay = () => {
-    setIsRecordBookOpen(false);
-    setActiveRequest(null);
-    setExpandedWeek(null);
-  };
 
-  // Locked week Unlock & Approve by Department
-  const handleUnlockAndApprove = async (weekRecordId: string, weekNum: number) => {
-    try {
-      const token = sessionStorage.getItem("ims.department.token");
-      const res = await fetch(`http://localhost:5000/api/weekly-records/${weekRecordId}/unlock`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ action: "approve" }),
-      });
-      if (res.ok) {
-        setActionMessage(`Week ${weekNum} has been unlocked successfully.`);
-        // Reload records
-        if (activeRequest) {
-          const recordsRes = await fetch(`http://localhost:5000/api/weekly-records/student/${activeRequest.studentUserId}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (recordsRes.ok) {
-            const recordsData = await recordsRes.json();
-            setStudentWeeks(recordsData.records || []);
-          }
-        }
-      } else {
-        alert("Failed to unlock week.");
-      }
-    } catch {
-      alert("Unable to process unlock request.");
-    }
-  };
 
   const handleDownloadOfferLetter = () => {
     if (!activeRequest || !activeRequest.offerDataUrl) return;
@@ -196,12 +170,8 @@ export default function DepartmentApprovalsPage() {
     document.body.removeChild(link);
   };
 
-  // Construct complete 24 weeks list for milestone tracker
-  const fullWeeksList = useMemo(() => {
-    if (!activeRequest || !activeRequest.internshipStartDate) return [];
-    
-    // We parse start date
-    // Note: dates are formatted as DD/MM/YYYY in table mapping, let's parse it safely
+  const parseBaseDate = () => {
+    if (!activeRequest || !activeRequest.internshipStartDate) return new Date();
     let baseDate;
     try {
       const parts = activeRequest.internshipStartDate.split("/");
@@ -214,37 +184,77 @@ export default function DepartmentApprovalsPage() {
       baseDate = new Date();
     }
     if (isNaN(baseDate.getTime())) baseDate = new Date();
+    return baseDate;
+  };
 
+  const getStatusDisplay = (record: any, endStr: string, graceDays: number) => {
+    if (!record || record.status === "Pending") {
+      const end = new Date(endStr);
+      const deadline = new Date(end);
+      deadline.setDate(deadline.getDate() + graceDays);
+      deadline.setHours(23,59,59,999);
+      
+      const now = new Date();
+      if (now < new Date(endStr)) return "Upcoming";
+      if (now <= deadline) return "Pending";
+      return "Missing";
+    }
+    if (record.status === "Submitted") {
+      return record.isLateSubmission ? "Submitted (Late)" : "Submitted";
+    }
+    return record.status;
+  };
+
+  const fullWeeksList = useMemo(() => {
+    const baseDate = parseBaseDate();
     const list = [];
     for (let i = 1; i <= 24; i++) {
       const start = new Date(baseDate);
       start.setDate(baseDate.getDate() + (i - 1) * 7);
       const end = new Date(start);
       end.setDate(start.getDate() + 6);
+      start.setHours(0,0,0,0);
+      end.setHours(23,59,59,999);
 
       const match = studentWeeks.find((w) => w.weekNumber === i);
-      const isPast = new Date() > end;
-
+      const endStr = end.toISOString().split("T")[0];
+      
       list.push({
-        weekNumber: i,
+        num: i,
         period: `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`,
-        status: match?.status || (isPast ? "LOCKED" : "LOCKED"), // show LOCKED if not started
-        realStatus: match?.status || "",
-        unlockRequested: match?.unlockRequested || false,
-        isLocked: match ? match.isLocked : isPast,
-        activities: match?.activities || "",
-        challengesEncountered: match?.challengesEncountered || "",
-        reflections: match?.reflections || "",
-        skillsGained: match?.skillsGained || [],
-        _id: match?._id,
+        status: getStatusDisplay(match, endStr, 3),
+        record: match,
       });
     }
     return list;
   }, [activeRequest, studentWeeks]);
 
-  const completedWeeksCount = useMemo(() => {
-    return studentWeeks.filter(w => w.status === "Submitted").length;
-  }, [studentWeeks]);
+  const fullMonthsList = useMemo(() => {
+    const baseDate = parseBaseDate();
+    const list = [];
+    for (let i = 1; i <= 6; i++) {
+      const start = new Date(baseDate);
+      start.setDate(baseDate.getDate() + (i - 1) * 28);
+      const end = new Date(start);
+      end.setDate(start.getDate() + 27);
+      start.setHours(0,0,0,0);
+      end.setHours(23,59,59,999);
+
+      const match = studentMonths.find((w) => w.monthNumber === i);
+      const endStr = end.toISOString().split("T")[0];
+      
+      list.push({
+        num: i,
+        period: `${start.toLocaleDateString()} - ${end.toLocaleDateString()}`,
+        status: getStatusDisplay(match, endStr, 5),
+        record: match,
+      });
+    }
+    return list;
+  }, [activeRequest, studentMonths]);
+
+  const completedWeeksCount = useMemo(() => studentWeeks.filter(w => w.status === "Submitted").length, [studentWeeks]);
+  const completedMonthsCount = useMemo(() => studentMonths.filter(w => w.status === "Submitted").length, [studentMonths]);
 
   if (!ready || loading) {
     return (
@@ -347,9 +357,9 @@ export default function DepartmentApprovalsPage() {
                 Download CSV
               </button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="max-h-[600px] overflow-auto rounded-xl border border-slate-200 mt-4">
               <table className="min-w-full text-left text-xs">
-                <thead className="bg-slate-100 text-slate-700 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200">
+                <thead className="bg-slate-100 text-slate-700 uppercase tracking-wider text-[10px] font-bold border-b border-slate-200 sticky top-0 z-10 shadow-sm">
                   <tr>
                     <th className="px-6 py-4">Student & ID</th>
                     <th className="px-6 py-4">Company</th>
@@ -488,103 +498,64 @@ export default function DepartmentApprovalsPage() {
                 {/* Split Content: Table & Milestone Tracker */}
                 <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr] items-start">
                   
-                  {/* Left Side: Weekly Records Table */}
-                  <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden">
-                    <div className="overflow-x-auto">
+                  {/* Left Side: Logs Table */}
+                  <div className="rounded-2xl bg-white border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                    {/* Tabs */}
+                    <div className="flex border-b border-slate-200 bg-slate-50">
+                      <button
+                        onClick={() => setRecordBookTab("weekly")}
+                        className={`flex-1 py-4 text-xs uppercase tracking-widest font-bold transition ${recordBookTab === "weekly" ? "border-b-2 border-navy-deep text-navy-deep bg-white" : "text-slate-500 hover:text-slate-700"}`}
+                      >
+                        Weekly Logs
+                      </button>
+                      <button
+                        onClick={() => setRecordBookTab("monthly")}
+                        className={`flex-1 py-4 text-xs uppercase tracking-widest font-bold transition ${recordBookTab === "monthly" ? "border-b-2 border-navy-deep text-navy-deep bg-white" : "text-slate-500 hover:text-slate-700"}`}
+                      >
+                        Monthly Reports
+                      </button>
+                    </div>
+
+                    <div className="max-h-[500px] overflow-auto">
                       <table className="min-w-full text-left text-xs">
-                        <thead className="bg-[#78a5c9]/20 text-slate-700 uppercase text-[10px] font-bold border-b border-slate-200">
+                        <thead className="bg-[#78a5c9]/20 text-slate-700 uppercase text-[10px] font-bold border-b border-slate-200 sticky top-0 z-10 shadow-sm">
                           <tr>
-                            <th className="px-5 py-3">Week</th>
-                            <th className="px-5 py-3">Period</th>
+                            <th className="px-5 py-3">Period #</th>
+                            <th className="px-5 py-3">Date Range</th>
                             <th className="px-5 py-3">Status</th>
-                            <th className="px-5 py-3">Activities</th>
-                            <th className="px-5 py-3 text-center">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
-                          {fullWeeksList.map((row) => (
-                            <React.Fragment key={row.weekNumber}>
-                              <tr className="hover:bg-slate-50/50 transition">
-                                <td className="px-5 py-4 font-bold text-slate-900">Week {row.weekNumber}</td>
-                                <td className="px-5 py-4 text-slate-600 font-medium">{row.period}</td>
-                                <td className="px-5 py-4">
-                                  {row.realStatus === "Submitted" ? (
-                                    <span className="inline-block rounded bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 text-[9px]">SUBMITTED</span>
-                                  ) : row.realStatus === "Draft" || row.realStatus === "Edited" ? (
-                                    <span className="inline-block rounded bg-sky-100 text-sky-800 font-bold px-2 py-0.5 text-[9px]">{row.realStatus.toUpperCase()}</span>
-                                  ) : (
-                                    <span className="inline-block rounded bg-slate-200 text-slate-600 font-bold px-2 py-0.5 text-[9px] flex items-center gap-1 w-max">
-                                      🔒 LOCKED
-                                    </span>
-                                  )}
-                                  {row.unlockRequested && (
-                                    <span className="ml-1.5 inline-block rounded bg-amber-100 text-amber-800 font-bold px-2 py-0.5 text-[9px]">UNLOCK REQUESTED</span>
-                                  )}
-                                </td>
-                                <td className="px-5 py-4 text-slate-500 truncate max-w-[150px]" title={row.activities}>
-                                  {row.activities || "—"}
-                                </td>
-                                <td className="px-5 py-4 text-center">
-                                  <div className="flex items-center justify-center gap-2">
-                                    {row._id && (row.realStatus === "Submitted" || row.realStatus === "Draft" || row.realStatus === "Edited") && (
-                                      <button
-                                        type="button"
-                                        onClick={() => setExpandedWeek(expandedWeek === row.weekNumber ? null : row.weekNumber)}
-                                        className="rounded bg-sky-50 text-sky-700 hover:bg-sky-100 font-bold px-2.5 py-1 text-[10px] transition shadow-sm cursor-pointer"
-                                      >
-                                        {expandedWeek === row.weekNumber ? "Hide Details" : "View Details"}
-                                      </button>
-                                    )}
-                                    {row.unlockRequested && row._id ? (
-                                      <button
-                                        type="button"
-                                        onClick={() => handleUnlockAndApprove(row._id!, row.weekNumber)}
-                                        className="rounded bg-slate-100 border border-slate-300 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 text-[10px] transition shadow-sm cursor-pointer"
-                                      >
-                                        Unlock week
-                                      </button>
-                                    ) : (
-                                      !row._id && <span className="text-slate-400 text-[11px]">—</span>
-                                    )}
-                                  </div>
-                                </td>
-                              </tr>
-                              {/* Expanded Row Content */}
-                              {expandedWeek === row.weekNumber && row._id && (
-                                <tr>
-                                  <td colSpan={5} className="px-5 py-4 bg-slate-50 border-t border-slate-200">
-                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
-                                      <div>
-                                        <h5 className="font-bold text-[#1e3a5f] text-xs uppercase mb-2">Tasks Completed</h5>
-                                        <p className="text-slate-700 whitespace-pre-wrap">{row.activities || "None provided."}</p>
-                                      </div>
-                                      <div>
-                                        <h5 className="font-bold text-[#1e3a5f] text-xs uppercase mb-2">Challenges Encountered</h5>
-                                        <p className="text-slate-700 whitespace-pre-wrap">{row.challengesEncountered || "None provided."}</p>
-                                      </div>
-                                      <div>
-                                        <h5 className="font-bold text-[#1e3a5f] text-xs uppercase mb-2">Reflections</h5>
-                                        <p className="text-slate-700 whitespace-pre-wrap">{row.reflections || "None provided."}</p>
-                                      </div>
-                                      <div>
-                                        <h5 className="font-bold text-[#1e3a5f] text-xs uppercase mb-2">Skills Gained</h5>
-                                        <div className="flex flex-wrap gap-2">
-                                          {row.skillsGained && row.skillsGained.length > 0 ? (
-                                            row.skillsGained.map((skill, idx) => (
-                                              <span key={idx} className="bg-sky-100 text-sky-800 text-[10px] font-bold px-2 py-1 rounded-full">
-                                                {skill}
-                                              </span>
-                                            ))
-                                          ) : (
-                                            <p className="text-slate-500 italic">No skills added.</p>
-                                          )}
-                                        </div>
-                                      </div>
-                                    </div>
-                                  </td>
-                                </tr>
-                              )}
-                            </React.Fragment>
+                          {(recordBookTab === "weekly" ? fullWeeksList : fullMonthsList).map((row) => (
+                            <tr key={row.num} className="hover:bg-slate-50/50 transition">
+                              <td className="px-5 py-4 font-bold text-slate-900">
+                                {recordBookTab === "weekly" ? "Week" : "Month"} {row.num}
+                              </td>
+                              <td className="px-5 py-4 text-slate-600 font-medium">{row.period}</td>
+                              <td className="px-5 py-4">
+                                {row.status.includes("Late") ? (
+                                  <span className="inline-block rounded bg-orange-100 text-orange-800 font-bold px-2 py-0.5 text-[9px] uppercase">
+                                    {row.status}
+                                  </span>
+                                ) : row.status.includes("Submitted") ? (
+                                  <span className="inline-block rounded bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 text-[9px] uppercase">
+                                    {row.status}
+                                  </span>
+                                ) : row.status === "Pending" ? (
+                                  <span className="inline-block rounded bg-amber-100 text-amber-800 font-bold px-2 py-0.5 text-[9px] uppercase">
+                                    PENDING
+                                  </span>
+                                ) : row.status === "Missing" ? (
+                                  <span className="inline-block rounded bg-red-100 text-red-800 font-bold px-2 py-0.5 text-[9px] uppercase">
+                                    MISSING
+                                  </span>
+                                ) : (
+                                  <span className="inline-block rounded bg-slate-200 text-slate-600 font-bold px-2 py-0.5 text-[9px] uppercase">
+                                    UPCOMING
+                                  </span>
+                                )}
+                              </td>
+                            </tr>
                           ))}
                         </tbody>
                       </table>
@@ -593,65 +564,64 @@ export default function DepartmentApprovalsPage() {
 
                   {/* Right Side: Milestone Tracker */}
                   <div className="rounded-2xl bg-white p-5 border border-slate-200 shadow-sm">
-                    <h4 className="text-xs font-bold text-slate-800 mb-4 tracking-wide">Milestone Tracker</h4>
+                    <h4 className="text-xs font-bold text-slate-800 mb-4 tracking-wide uppercase">Milestone Tracker</h4>
                     
-                    <div className="grid grid-cols-6 gap-2.5">
-                      {fullWeeksList.map((w) => {
-                        let bgClass = "bg-slate-100 text-slate-400";
-                        if (w.realStatus === "Submitted") bgClass = "bg-[#1e3a5f] text-white";
-                        else if (w.realStatus === "Draft" || w.realStatus === "Edited") bgClass = "bg-sky-500 text-white font-black";
+                    <div className="mb-6">
+                      <p className="text-[10px] font-bold text-slate-500 mb-2 uppercase">Weekly Progress</p>
+                      <div className="grid grid-cols-6 gap-2.5">
+                        {fullWeeksList.map((w) => {
+                          let bgClass = "bg-slate-100 text-slate-400";
+                          if (w.status.includes("Submitted")) bgClass = "bg-emerald-500 text-white shadow-sm";
+                          else if (w.status === "Missing") bgClass = "bg-red-500 text-white shadow-sm";
+                          else if (w.status === "Pending") bgClass = "bg-amber-400 text-white shadow-sm";
 
-                        return (
-                          <div
-                            key={w.weekNumber}
-                            className={`h-9 rounded-md flex items-center justify-center text-xs font-bold shadow-sm border border-black/5 ${bgClass}`}
-                            title={`Week ${w.weekNumber}`}
-                          >
-                            {w.weekNumber}
-                          </div>
-                        );
-                      })}
+                          return (
+                            <div
+                              key={w.num}
+                              title={`Week ${w.num}: ${w.status}`}
+                              className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black transition-all ${bgClass}`}
+                            >
+                              {w.num}
+                            </div>
+                          );
+                        })}
+                      </div>
                     </div>
 
-                    {/* Legend Indicators */}
-                    <div className="mt-5 pt-4 border-t border-slate-100 flex items-center justify-between text-[11px] font-bold text-slate-700 px-1">
-                      <div className="flex items-center gap-2">
-                        <span className="h-3 w-3 rounded-full bg-[#1e3a5f]"></span>
-                        <span>Submitted</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="h-3 w-3 rounded-full bg-sky-500"></span>
-                        <span>Draft/Edited</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="h-3 w-3 rounded-full bg-slate-100"></span>
-                        <span>Not Started</span>
+                    <div>
+                      <p className="text-[10px] font-bold text-slate-500 mb-2 uppercase">Monthly Progress</p>
+                      <div className="grid grid-cols-6 gap-2.5">
+                        {fullMonthsList.map((m) => {
+                          let bgClass = "bg-slate-100 text-slate-400";
+                          if (m.status.includes("Submitted")) bgClass = "bg-emerald-500 text-white shadow-sm";
+                          else if (m.status === "Missing") bgClass = "bg-red-500 text-white shadow-sm";
+                          else if (m.status === "Pending") bgClass = "bg-amber-400 text-white shadow-sm";
+
+                          return (
+                            <div
+                              key={m.num}
+                              title={`Month ${m.num}: ${m.status}`}
+                              className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-black transition-all ${bgClass}`}
+                            >
+                              {m.num}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
 
-                  {/* Summary Stats Panel (FR-D22) */}
+                  {/* Summary Stats Panel */}
                   <div className="rounded-2xl bg-[#f8fafc] p-5 border border-slate-200 shadow-sm mt-4">
-                    <h4 className="text-xs font-bold text-slate-800 mb-4 tracking-wide">Weekly Progress Summary</h4>
+                    <h4 className="text-xs font-bold text-slate-800 mb-4 tracking-wide uppercase">Progress Summary</h4>
                     <div className="grid grid-cols-2 gap-4">
                       <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
-                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Total Completed</p>
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Weekly</p>
                         <p className="text-2xl font-black text-[#1e3a5f] mt-1">{completedWeeksCount} <span className="text-sm font-semibold text-slate-400">/ 24</span></p>
                       </div>
                       <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs">
-                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Pending Drafts</p>
-                        <p className="text-2xl font-black text-sky-600 mt-1">{studentWeeks.filter(w => w.status === "Draft" || w.status === "Edited").length}</p>
-                      </div>
-                      <div className="bg-white p-3 rounded-xl border border-slate-100 shadow-xs col-span-2 flex items-center justify-between">
-                        <div>
-                          <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Current Active Week</p>
-                          <p className="text-lg font-bold text-slate-700 mt-0.5">
-                            {fullWeeksList.find(w => new Date() >= new Date(w.period.split(" - ")[0]) && new Date() <= new Date(w.period.split(" - ")[1]))?.weekNumber || "Outside Period"}
-                          </p>
-                        </div>
-                        <div className="h-10 w-10 rounded-full bg-slate-100 flex items-center justify-center text-lg">
-                          📅
-                        </div>
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Monthly</p>
+                        <p className="text-2xl font-black text-sky-600 mt-1">{completedMonthsCount} <span className="text-sm font-semibold text-slate-400">/ 6</span></p>
                       </div>
                     </div>
                   </div>

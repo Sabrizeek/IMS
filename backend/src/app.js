@@ -12,6 +12,7 @@ const profileRoutes = require("./routes/profileRoutes");
 const gpaRoutes = require("./routes/gpaRoutes");
 const portfolioRoutes = require("./routes/portfolioRoutes");
 const weeklyRecordRoutes = require("./routes/weeklyRecordRoutes");
+const monthlyRecordRoutes = require("./routes/monthlyRecordRoutes");
 const accountRequestRoutes = require("./routes/accountRequestRoutes");
 const subjectRoutes = require("./routes/subjectRoutes");
 const internshipRoutes = require("./routes/internshipRoutes");
@@ -36,6 +37,7 @@ app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan("dev"));
 app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
+app.use("/templates", express.static(path.join(__dirname, "..", "public", "templates")));
 
 app.get("/api/health", (_req, res) => {
   res.json({ ok: true, service: "ims-backend" });
@@ -47,6 +49,7 @@ app.use("/api/profile", profileRoutes);
 app.use("/api/gpa", gpaRoutes);
 app.use("/api/portfolio", portfolioRoutes);
 app.use("/api/weekly-records", weeklyRecordRoutes);
+app.use("/api/monthly-records", monthlyRecordRoutes);
 app.use("/api/account-requests", accountRequestRoutes);
 app.use("/api/subjects", subjectRoutes);
 app.use("/api/internships", internshipRoutes);

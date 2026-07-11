@@ -62,6 +62,14 @@ async function fetchProfileForUser(
   return { profile: null, deptProfile: null };
 }
 
+const safeSetItem = (key: string, value: any) => {
+  try {
+    sessionStorage.setItem(key, JSON.stringify(value));
+  } catch (err) {
+    console.warn(`Failed to save ${key} to sessionStorage (QuotaExceeded). State is kept in memory.`);
+  }
+};
+
 async function fetchSemesters(): Promise<Semester[]> {
   try {
     const res = await fetch(`${API_BASE}/gpa/me`, { headers: authHeaders("student") });
@@ -111,13 +119,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           fetchProfileForUser("student").then(({ profile: freshProfile }) => {
             if (freshProfile) {
               setProfileState(freshProfile);
-              sessionStorage.setItem(PROFILE_KEY, JSON.stringify(freshProfile));
+              safeSetItem(PROFILE_KEY, freshProfile);
             }
           }).catch(console.error);
 
           fetchSemesters().then((freshSemesters) => {
             setSemestersState(freshSemesters);
-            sessionStorage.setItem(SEMESTERS_KEY, JSON.stringify(freshSemesters));
+            safeSetItem(SEMESTERS_KEY, freshSemesters);
           }).catch(console.error);
         } else {
           setSemestersState(defaultSemesters());
@@ -137,7 +145,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           fetchProfileForUser("department").then(({ deptProfile: freshDept }) => {
             if (freshDept) {
               setDeptProfileState(freshDept);
-              sessionStorage.setItem(DEPT_PROFILE_KEY, JSON.stringify(freshDept));
+              safeSetItem(DEPT_PROFILE_KEY, freshDept);
             }
           }).catch(console.error);
         }
@@ -163,7 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // 1. Persist session to sessionStorage
     sessionStorage.setItem(tokenKey, token);
-    sessionStorage.setItem(userKey, JSON.stringify(next));
+    safeSetItem(userKey, next);
 
     // 2. Fetch profile and semesters (token is now in sessionStorage, so authHeaders() works)
     const { profile: freshProfile, deptProfile: freshDept } =
@@ -179,12 +187,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setStudentUser(next);
       setProfileState(freshProfile);
       setSemestersState(freshSemesters);
-      if (freshProfile) sessionStorage.setItem(PROFILE_KEY, JSON.stringify(freshProfile));
-      sessionStorage.setItem(SEMESTERS_KEY, JSON.stringify(freshSemesters));
+      if (freshProfile) safeSetItem(PROFILE_KEY, freshProfile);
+      safeSetItem(SEMESTERS_KEY, freshSemesters);
     } else {
       setDeptUser(next);
       setDeptProfileState(freshDept);
-      if (freshDept) sessionStorage.setItem(DEPT_PROFILE_KEY, JSON.stringify(freshDept));
+      if (freshDept) safeSetItem(DEPT_PROFILE_KEY, freshDept);
     }
 
     // 4. Now mark ready
@@ -207,10 +215,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     if (parsedUser.role === "student" && freshProfile) {
       setProfileState(freshProfile);
-      sessionStorage.setItem(PROFILE_KEY, JSON.stringify(freshProfile));
+      safeSetItem(PROFILE_KEY, freshProfile);
     } else if (parsedUser.role === "department" && freshDept) {
       setDeptProfileState(freshDept);
-      sessionStorage.setItem(DEPT_PROFILE_KEY, JSON.stringify(freshDept));
+      safeSetItem(DEPT_PROFILE_KEY, freshDept);
     }
   };
 
@@ -242,7 +250,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // -------------------------------------------------------------------------
   const setSemesters = async (next: Semester[]) => {
     setSemestersState(next);
-    sessionStorage.setItem(SEMESTERS_KEY, JSON.stringify(next));
+    safeSetItem(SEMESTERS_KEY, next);
     try {
       await fetch(`${API_BASE}/gpa/me`, {
         method: "PUT",
@@ -256,7 +264,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setProfile = async (next: StudentProfile) => {
     setProfileState(next);
-    sessionStorage.setItem(PROFILE_KEY, JSON.stringify(next));
+    safeSetItem(PROFILE_KEY, next);
     try {
       await fetch(`${API_BASE}/profile/me`, {
         method: "PUT",
@@ -270,7 +278,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const setDeptProfile = async (next: DepartmentProfile) => {
     setDeptProfileState(next);
-    sessionStorage.setItem(DEPT_PROFILE_KEY, JSON.stringify(next));
+    safeSetItem(DEPT_PROFILE_KEY, next);
     try {
       await fetch(`${API_BASE}/profile/me`, {
         method: "PUT",

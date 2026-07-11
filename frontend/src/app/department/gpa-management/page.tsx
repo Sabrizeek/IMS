@@ -501,9 +501,9 @@ export default function GpaManagementPage() {
                   {subjects.length === 0 ? (
                     <p className="py-6 text-center text-sm text-slate-400 border-2 border-dashed border-slate-200 rounded-xl mt-4">No subjects added to this semester yet.</p>
                   ) : (
-                    <div className="overflow-x-auto rounded-xl border border-slate-100">
+                    <div className="max-h-[600px] overflow-auto rounded-xl border border-slate-100">
                       <table className="w-full text-xs">
-                        <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase tracking-wider">
+                        <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                           <tr>
                             <th className="px-3 py-2.5 text-left font-bold">Code</th>
                             <th className="px-3 py-2.5 text-left font-bold">Subject Name</th>
@@ -825,9 +825,9 @@ export default function GpaManagementPage() {
               </button>
             </div>
             <div className="p-6 overflow-auto">
-              <div className="overflow-x-auto rounded-xl border border-slate-100">
+              <div className="max-h-[600px] overflow-auto rounded-xl border border-slate-100 relative">
                 <table className="w-full text-xs whitespace-nowrap">
-                  <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase tracking-wider">
+                  <thead className="bg-slate-50 border-b border-slate-100 text-slate-500 uppercase tracking-wider sticky top-0 z-20 shadow-sm">
                     <tr>
                       <th className="px-4 py-3 text-left font-bold sticky left-0 bg-slate-50 z-10 shadow-[1px_0_0_0_#f1f5f9]">Reg No</th>
                       <th className="px-4 py-3 text-left font-bold">Name</th>

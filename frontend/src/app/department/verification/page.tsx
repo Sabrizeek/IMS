@@ -207,9 +207,9 @@ export default function DepartmentVerificationPage() {
                 Download CSV
               </button>
             </div>
-            <div className="overflow-x-auto">
+            <div className="max-h-[600px] overflow-auto rounded-xl border border-slate-200">
               <table className="min-w-full border-collapse text-left text-sm">
-                <thead>
+                <thead className="sticky top-0 z-10 shadow-sm">
                   <tr className="bg-navy-deep text-white">
                     <th className="px-6 py-4">Name</th>
                     <th className="px-6 py-4">Student ID</th>

@@ -119,10 +119,10 @@ export default function DepartmentStudentDetailsPage() {
   }, [students, selectedSpecialization, selectedStatus, selectedGpaOrder, searchQuery]);
 
   const handleDownloadStudents = () => {
-    const headers = ["Name", "Student ID", "Email", "GPA", "Specialization", "Internship Status", "Duration"];
+    const headers = ["Name", "Student ID", "Email", "GPA", "Specialization", "Internship Status"];
     let csv = headers.join(",") + "\n";
     filteredStudents.forEach((student) => {
-      csv += `"${student.name}","${student.id}","${student.email}","${student.gpa.toFixed(2)}","${student.specialization || ''}","${student.internshipStatus || ''}","${student.duration || ''}"\n`;
+      csv += `"${student.name}","${student.id}","${student.email}","${student.gpa.toFixed(2)}","${student.specialization || ''}","${student.internshipStatus || ''}"\n`;
     });
     
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -338,16 +338,15 @@ export default function DepartmentStudentDetailsPage() {
             </div>
 
             {/* Students Table */}
-            <div className="mt-10 overflow-hidden rounded-3xl border border-slate-100 bg-slate-50/50">
+            <div className="mt-10 max-h-[600px] overflow-auto rounded-3xl border border-slate-100 bg-slate-50/50">
               <table className="min-w-full text-left text-xs">
-                <thead className="bg-[#e4eff6] text-slate-600 font-bold uppercase tracking-wider">
+                <thead className="bg-[#e4eff6] text-slate-600 font-bold uppercase tracking-wider sticky top-0 z-10 shadow-sm">
                   <tr>
                     <th className="px-6 py-4.5">No</th>
                     <th className="px-6 py-4.5">Student Details</th>
                     <th className="px-6 py-4.5">GPA</th>
                     <th className="px-6 py-4.5">Specialization</th>
                     <th className="px-6 py-4.5">Internship Status</th>
-                    <th className="px-6 py-4.5">Duration</th>
                     <th className="px-6 py-4.5">Actions</th>
                   </tr>
                 </thead>
@@ -392,7 +391,6 @@ export default function DepartmentStudentDetailsPage() {
                             {student.internshipStatus}
                           </span>
                         </td>
-                        <td className="px-6 py-5 font-bold text-[#0f2a4a] text-sm">{student.duration || "N/A"}</td>
                         <td className="px-6 py-5 space-x-2 whitespace-nowrap">
                           <button
                             type="button"
