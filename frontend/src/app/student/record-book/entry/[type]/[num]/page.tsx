@@ -358,7 +358,7 @@ export default function RecordBookEntryPage({ params: paramsPromise }: { params:
                 
                 <div className="flex flex-col gap-4 w-full max-w-xs">
                   <a 
-                    href={`http://localhost:5000/${record.filePath.replace(/\\/g, '/')}`} 
+                    href={`http://localhost:5000/uploads/${record.filePath.split(/[\\/]/).pop()}`} 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="flex items-center justify-center gap-2 bg-[#d7e8f0] text-[#1e3a5f] font-bold py-3 px-6 rounded-xl hover:bg-[#c2dde8] transition"

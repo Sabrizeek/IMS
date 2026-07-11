@@ -119,6 +119,26 @@ export default function RecordBookPage() {
     return null;
   };
 
+  const handleDownload = async (e: React.MouseEvent, url: string, filename: string) => {
+    e.preventDefault();
+    try {
+      showToast("Downloading...");
+      const res = await fetch(url);
+      const blob = await res.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+      console.error("Download failed:", err);
+      showToast("Download failed. Please try again.");
+    }
+  };
+
   const weeksList = useMemo(() => {
     if (!internshipStartDate) return [];
     const baseDate = new Date(internshipStartDate);
@@ -276,15 +296,7 @@ export default function RecordBookPage() {
             <div className="p-8">
               {activeTab === "weekly" ? (
                 <div>
-                  <div className="mb-6 flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div>
-                      <h3 className="font-bold text-slate-800">Weekly Log Template</h3>
-                      <p className="text-xs text-slate-500">Deadline: 3 days after week ends</p>
-                    </div>
-                    <a href="http://localhost:5000/templates/Weekly_Log_Template.docx" download className="flex items-center gap-2 rounded-lg bg-navy-deep px-4 py-2 text-xs font-bold text-white transition hover:bg-[#15345e] shadow-sm">
-                      <Download className="h-4 w-4" /> Download .docx
-                    </a>
-                  </div>
+
                   
                   <div className="space-y-4">
                     {weeksList.map((item) => (
@@ -299,6 +311,14 @@ export default function RecordBookPage() {
                         </div>
                         
                         <div className="mt-4 md:mt-0 flex gap-2">
+                          {item.record?.status === "Submitted" && (
+                            <button 
+                              onClick={(e) => handleDownload(e, `http://localhost:5000/uploads/${item.record!.filePath.split(/[\\/]/).pop()}`, item.record!.originalFilename || `Week_${item.num}_Log.pdf`)}
+                              className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition shadow-sm bg-[#e8f4f8] text-[#3b6287] hover:bg-[#d7e8f0]"
+                            >
+                              <Download className="h-4 w-4" /> Download PDF
+                            </button>
+                          )}
                           <button
                             onClick={() => router.push(`/student/record-book/entry/weekly/${item.num}`)}
                             disabled={item.isLocked}
@@ -313,15 +333,7 @@ export default function RecordBookPage() {
                 </div>
               ) : (
                 <div>
-                  <div className="mb-6 flex justify-between items-center bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <div>
-                      <h3 className="font-bold text-slate-800">Monthly Progress Template</h3>
-                      <p className="text-xs text-slate-500">Deadline: 5 days after month ends</p>
-                    </div>
-                    <a href="http://localhost:5000/templates/Monthly_Progress_Report.docx" download className="flex items-center gap-2 rounded-lg bg-navy-deep px-4 py-2 text-xs font-bold text-white transition hover:bg-[#15345e] shadow-sm">
-                      <Download className="h-4 w-4" /> Download .docx
-                    </a>
-                  </div>
+
 
                   <div className="space-y-4">
                     {monthsList.map((item) => (
@@ -336,6 +348,14 @@ export default function RecordBookPage() {
                         </div>
                         
                         <div className="mt-4 md:mt-0 flex gap-2">
+                          {item.record?.status === "Submitted" && (
+                            <button 
+                              onClick={(e) => handleDownload(e, `http://localhost:5000/uploads/${item.record!.filePath.split(/[\\/]/).pop()}`, item.record!.originalFilename || `Month_${item.num}_Log.pdf`)}
+                              className="flex items-center gap-2 rounded-xl px-4 py-2 text-xs font-bold transition shadow-sm bg-[#e8f4f8] text-[#3b6287] hover:bg-[#d7e8f0]"
+                            >
+                              <Download className="h-4 w-4" /> Download PDF
+                            </button>
+                          )}
                           <button
                             onClick={() => router.push(`/student/record-book/entry/monthly/${item.num}`)}
                             disabled={item.isLocked}
