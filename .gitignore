@@ -24,14 +24,9 @@ backend/dist/
 backend/build/
 
 # Environment files
-.env
-.env.*
-.env.local
 .env.development.local
 .env.test.local
 .env.production.local
-**/.env
-**/.env.*
 
 # debug logs
 *.log
@@ -49,6 +44,6 @@ yarn-error.log*
 
 # OS / IDE files
 .DS_Store
-.vscode/
 .idea/
 Thumbs.db
+config.bat

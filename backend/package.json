@@ -4,8 +4,8 @@
   "private": true,
   "main": "server.js",
   "scripts": {
-    "dev": "nodemon server.js",
-    "start": "node server.js"
+    "dev": "node init && nodemon server.js",
+    "start": "node init && node server.js"
   },
   "dependencies": {
     "bcryptjs": "^3.0.2",
