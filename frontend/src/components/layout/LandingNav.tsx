@@ -10,9 +10,10 @@ const links = [
 
 export function LandingNav() {
   return (
-    <header className="bg-navy-deep text-white">
+    <header className="sticky top-0 z-50 bg-navy-deep text-white">
       <nav className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-        <Link href="/" className="text-xl font-bold tracking-wide">
+        <Link href="/" className="flex items-center gap-2 text-xl font-bold tracking-wide">
+          <img src="/logo.jpg" alt="IMS Logo" className="h-8 w-auto object-contain" />
           IMS
         </Link>
         <ul className="hidden items-center gap-7 text-sm text-white/80 md:flex">

@@ -144,14 +144,8 @@ export default function Home() {
               <LinkButton href="/student/auth">Get Started</LinkButton>
             </div>
           </div>
-          <div className="flex aspect-[4/3] items-center justify-center rounded-2xl bg-gradient-to-br from-navy to-navy-deep text-center text-white/80 shadow-lg">
-            <div>
-              <Building2 className="mx-auto h-12 w-12" />
-              <p className="mt-3 text-lg font-semibold">INTERNEXUS</p>
-              <p className="text-sm text-white/60">
-                Professional Internship Management
-              </p>
-            </div>
+          <div className="flex aspect-[4/3] items-center justify-center overflow-hidden rounded-2xl shadow-lg">
+            <img src="/analytics.jpg" alt="Analytics" className="h-full w-full object-cover" />
           </div>
         </div>
       </section>
