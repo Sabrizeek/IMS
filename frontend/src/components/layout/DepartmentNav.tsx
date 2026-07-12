@@ -24,7 +24,7 @@ export function DepartmentNav() {
   };
 
   return (
-    <header className="bg-navy-deep text-white">
+    <header className="sticky top-0 z-50 bg-navy-deep text-white">
       <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-6 py-4">
         <Link href="/department/dashboard" className="text-2xl font-bold tracking-wide">
           IMS
